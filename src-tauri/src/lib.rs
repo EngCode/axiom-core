@@ -1,3 +1,11 @@
+/*======> Reference By Comment <======
+ * ===> 01 - Imports & Constants
+ * ===> 02 - Window Management
+ * ===> 03 - Commands
+ * ===> 04 - Application Setup
+ * ===> 05 - Run Loop
+ */
+
 use tauri::{
     image::Image,
     menu::{Menu, MenuItem},
@@ -23,13 +31,21 @@ struct Db(Mutex<rusqlite::Connection>);
 
 const MAIN_WINDOW: &str = "main";
 const CAPTURE_WINDOW: &str = "capture";
-const TRAY_ID: &str = "orbit-tray";
+const TRAY_ID: &str = "axiom-tray";
 
 static QUITTING: AtomicBool = AtomicBool::new(false);
 
+fn env_value(primary: &str, legacy: &str) -> Option<String> {
+    std::env::var(primary)
+        .ok()
+        .filter(|value| !value.is_empty())
+        .or_else(|| std::env::var(legacy).ok().filter(|value| !value.is_empty()))
+}
 fn app_icon() -> Image<'static> {
     Image::from_bytes(include_bytes!("../icons/32x32.png")).expect("valid tray icon")
 }
+
+//=====> Window Management <=====//
 
 fn show_main_window(app: &tauri::AppHandle) {
     if let Some(window) = app.get_webview_window(MAIN_WINDOW) {
@@ -40,14 +56,14 @@ fn show_main_window(app: &tauri::AppHandle) {
     }
 
     let builder = WebviewWindowBuilder::new(app, MAIN_WINDOW, WebviewUrl::App("index.html".into()))
-        .title("Orbit")
+        .title("Axiom Core")
         .inner_size(1240.0, 860.0)
         .min_inner_size(900.0, 620.0)
         .center();
 
-    let builder = match std::env::var("ORBIT_WEBVIEW_DATA_DIR") {
-        Ok(dir) if !dir.is_empty() => builder.data_directory(std::path::PathBuf::from(dir)),
-        _ => builder,
+    let builder = match env_value("AXIOM_WEBVIEW_DATA_DIR", "ORBIT_WEBVIEW_DATA_DIR") {
+        Some(dir) => builder.data_directory(std::path::PathBuf::from(dir)),
+        None => builder,
     };
 
     if let Err(error) = builder.build() {
@@ -81,15 +97,17 @@ fn toggle_capture_window(app: &tauri::AppHandle) {
             .resizable(false)
             .center();
 
-    let builder = match std::env::var("ORBIT_WEBVIEW_DATA_DIR") {
-        Ok(dir) if !dir.is_empty() => builder.data_directory(std::path::PathBuf::from(dir)),
-        _ => builder,
+    let builder = match env_value("AXIOM_WEBVIEW_DATA_DIR", "ORBIT_WEBVIEW_DATA_DIR") {
+        Some(dir) => builder.data_directory(std::path::PathBuf::from(dir)),
+        None => builder,
     };
 
     if let Err(error) = builder.build() {
         eprintln!("failed to create the capture window: {error}");
     }
 }
+
+//=====> Commands <=====//
 
 #[tauri::command]
 fn load_state(pool: State<'_, Db>) -> Result<Option<PersistedState>, String> {
@@ -100,6 +118,8 @@ fn load_state(pool: State<'_, Db>) -> Result<Option<PersistedState>, String> {
     db::load_state(&connection).map_err(|error| error.to_string())
 }
 
+//=====> Commands <=====//
+
 #[tauri::command]
 fn save_state(pool: State<'_, Db>, state: PersistedState) -> Result<(), String> {
     let mut connection = pool
@@ -108,6 +128,8 @@ fn save_state(pool: State<'_, Db>, state: PersistedState) -> Result<(), String> 
         .map_err(|_| "database lock poisoned".to_string())?;
     db::save_state(&mut connection, &state).map_err(|error| error.to_string())
 }
+
+//=====> Commands <=====//
 
 #[tauri::command]
 fn load_library(pool: State<'_, Db>) -> Result<LibrarySnapshot, String> {
@@ -118,6 +140,8 @@ fn load_library(pool: State<'_, Db>) -> Result<LibrarySnapshot, String> {
     db::load_library(&connection).map_err(|error| error.to_string())
 }
 
+//=====> Commands <=====//
+
 #[tauri::command]
 fn save_media_item(pool: State<'_, Db>, item: MediaItem) -> Result<(), String> {
     let connection = pool
@@ -126,6 +150,8 @@ fn save_media_item(pool: State<'_, Db>, item: MediaItem) -> Result<(), String> {
         .map_err(|_| "database lock poisoned".to_string())?;
     db::upsert_media_item(&connection, &item).map_err(|error| error.to_string())
 }
+
+//=====> Commands <=====//
 
 #[tauri::command]
 fn attach_media_copy(pool: State<'_, Db>, copy: MediaCopy) -> Result<(), String> {
@@ -136,6 +162,8 @@ fn attach_media_copy(pool: State<'_, Db>, copy: MediaCopy) -> Result<(), String>
     db::attach_media_copy(&connection, &copy).map_err(|error| error.to_string())
 }
 
+//=====> Commands <=====//
+
 #[tauri::command]
 fn upsert_volume(pool: State<'_, Db>, volume: Volume) -> Result<(), String> {
     let connection = pool
@@ -144,6 +172,17 @@ fn upsert_volume(pool: State<'_, Db>, volume: Volume) -> Result<(), String> {
         .map_err(|_| "database lock poisoned".to_string())?;
     db::upsert_volume(&connection, &volume).map_err(|error| error.to_string())
 }
+
+//=====> Commands <=====//
+
+#[tauri::command]
+fn set_window_title(app: tauri::AppHandle, title: String) {
+    if let Some(window) = app.get_webview_window(MAIN_WINDOW) {
+        let _ = window.set_title(&title);
+    }
+}
+
+//=====> Application Setup <=====//
 
 pub fn run() {
     let capture_shortcut = Shortcut::new(Some(Modifiers::CONTROL | Modifiers::ALT), Code::Space);
@@ -155,7 +194,8 @@ pub fn run() {
             load_library,
             save_media_item,
             attach_media_copy,
-            upsert_volume
+            upsert_volume,
+            set_window_title
         ])
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             schedule_main_window(app);
@@ -172,13 +212,13 @@ pub fn run() {
         .setup(move |app| {
             let capture_item =
                 MenuItem::with_id(app, "capture", "Quick capture", true, None::<&str>)?;
-            let open_item = MenuItem::with_id(app, "open", "Open Orbit", true, None::<&str>)?;
-            let quit_item = MenuItem::with_id(app, "quit", "Quit Orbit", true, None::<&str>)?;
+            let open_item = MenuItem::with_id(app, "open", "Open Axiom Core", true, None::<&str>)?;
+            let quit_item = MenuItem::with_id(app, "quit", "Quit Axiom Core", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&capture_item, &open_item, &quit_item])?;
 
             TrayIconBuilder::with_id(TRAY_ID)
                 .icon(app_icon())
-                .tooltip("Orbit — personal workspace")
+                .tooltip("Axiom Core — personal workspace")
                 .menu(&menu)
                 .show_menu_on_left_click(false)
                 .on_menu_event(|app, event| match event.id.as_ref() {
@@ -207,22 +247,31 @@ pub fn run() {
                 eprintln!("could not register the global shortcut: {error}");
             }
 
-            let data_dir = match std::env::var("ORBIT_DATA_DIR") {
-                Ok(dir) if !dir.is_empty() => std::path::PathBuf::from(dir),
-                _ => app.path().app_data_dir()?,
+            let data_dir = match env_value("AXIOM_DATA_DIR", "ORBIT_DATA_DIR") {
+                Some(dir) => std::path::PathBuf::from(dir),
+                None => app.path().app_data_dir()?,
             };
-            let connection = db::open(&data_dir.join("orbit.db"))?;
+            let database_path = data_dir.join("axiom.db");
+            let legacy_database = data_dir.join("orbit.db");
+            if !database_path.exists() && legacy_database.exists() {
+                let _ = std::fs::rename(&legacy_database, &database_path);
+                let _ = std::fs::rename(data_dir.join("orbit.db-wal"), data_dir.join("axiom.db-wal"));
+                let _ = std::fs::rename(data_dir.join("orbit.db-shm"), data_dir.join("axiom.db-shm"));
+            }
+            let connection = db::open(&database_path)?;
             app.manage(Db(Mutex::new(connection)));
 
-            // The first launch opens the app; ORBIT_START_HIDDEN=1 keeps the shell tray-only.
-            if std::env::var("ORBIT_START_HIDDEN").unwrap_or_default() != "1" {
+            // The first launch opens the app; AXIOM_START_HIDDEN=1 keeps the shell tray-only.
+            if env_value("AXIOM_START_HIDDEN", "ORBIT_START_HIDDEN").unwrap_or_default() != "1" {
                 show_main_window(app.handle());
             }
 
             Ok(())
         })
         .build(tauri::generate_context!())
-        .expect("error while building Orbit");
+        .expect("error while building Axiom Core");
+
+//=====> Run Loop <=====//
 
     app.run(|_app_handle, event| {
         if let tauri::RunEvent::ExitRequested { api, .. } = event {

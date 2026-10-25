@@ -1,3 +1,10 @@
+/**======> Reference By Comment <======
+ * ===> 01 - Imports
+ * ===> 02 - Selection & Tag Actions
+ * ===> 03 - List Pane
+ * ===> 04 - Editor Pane
+ */
+
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { NotebookPen, Pin, Plus, Search, Trash2, X } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
@@ -92,13 +99,13 @@ export default function NotesPage() {
         <Card className="flex min-h-0 flex-col overflow-hidden">
           <div className="flex items-center gap-1.5 border-b border-line p-2.5">
             <div className="relative min-w-0 flex-1">
-              <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-fg-subtle" />
+              <Search className="pointer-events-none absolute top-1/2 start-2.5 size-3.5 -translate-y-1/2 text-fg-subtle" />
               <Input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Search notes…"
                 aria-label="Search notes"
-                className="h-8 pl-8 text-[12.5px]"
+                className="h-8 ps-8 text-[12.5px]"
               />
             </div>
             <IconButton label="New note" onClick={createNote}>
@@ -120,7 +127,7 @@ export default function NotesPage() {
                     type="button"
                     onClick={() => selectNote(note.id)}
                     className={cn(
-                      'block w-full rounded-lg px-2.5 py-2 text-left transition-colors',
+                      'block w-full rounded-lg px-2.5 py-2 text-start transition-colors',
                       isActive ? 'bg-surface-2' : 'hover:bg-surface-2/60',
                     )}
                   >
@@ -139,7 +146,7 @@ export default function NotesPage() {
                           #{tag}
                         </span>
                       ))}
-                      <span className="ml-auto text-[9.5px] text-fg-subtle">
+                      <span className="ms-auto text-[9.5px] text-fg-subtle">
                         {formatRelative(note.updatedAt)}
                       </span>
                     </div>
@@ -156,7 +163,7 @@ export default function NotesPage() {
               <span className="text-[10.5px] text-fg-subtle">
                 {selected.pinned ? 'Pinned' : 'Note'} · saved {formatRelative(selected.updatedAt)}
               </span>
-              <div className="ml-auto flex items-center gap-1.5">
+              <div className="ms-auto flex items-center gap-1.5">
                 <Select
                   value={selected.projectId ?? ''}
                   onChange={(event) => updateNote(selected.id, { projectId: event.target.value || null })}

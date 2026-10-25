@@ -1,3 +1,9 @@
+/**======> Reference By Comment <======
+ * ===> 01 - Imports
+ * ===> 02 - Docs Navigation
+ * ===> 03 - Document Viewer
+ */
+
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Search } from 'lucide-react'
@@ -44,13 +50,13 @@ export default function DocsPage() {
         <Card className="lg:sticky lg:top-20">
           <div className="border-b border-line p-2.5">
             <div className="relative">
-              <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-fg-subtle" />
+              <Search className="pointer-events-none absolute top-1/2 start-2.5 size-3.5 -translate-y-1/2 text-fg-subtle" />
               <Input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Search docs…"
                 aria-label="Search documentation"
-                className="h-8 pl-8 text-[12.5px]"
+                className="h-8 ps-8 text-[12.5px]"
               />
             </div>
           </div>
@@ -76,7 +82,7 @@ export default function DocsPage() {
                           onClick={() => setParams({ doc: entry.slug })}
                           aria-current={active ? 'page' : undefined}
                           className={cn(
-                            'block w-full truncate rounded-control px-2 py-1.5 text-left text-[12px] transition-colors',
+                            'block w-full truncate rounded-control px-2 py-1.5 text-start text-[12px] transition-colors',
                             active
                               ? 'bg-surface-2 font-medium text-fg'
                               : 'text-fg-muted hover:bg-surface-2/70 hover:text-fg',

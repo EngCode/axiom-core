@@ -1,14 +1,16 @@
+/**======> Reference By Comment <======
+ * ===> 01 - Constants
+ * ===> 02 - Seed Data
+ */
+
+import { DEFAULT_IDENTITY } from './identity'
 import type { AppState, Issue, Note, Project } from './types'
 import { addDaysISO } from './utils'
 
-export const STORAGE_KEY = 'orbit.state.v1'
+export const STORAGE_KEY = 'axiom.state.v1'
+export const LEGACY_STORAGE_KEY = 'orbit.state.v1'
 export const APP_VERSION = 1
 
-export const WORKSPACE = {
-  name: 'Orbit',
-  owner: 'Abdullah',
-  kind: 'Personal workspace',
-}
 
 function daysAgo(days: number, hour = 10): string {
   const date = new Date()
@@ -376,7 +378,8 @@ Next month: one inbox, one list, one place for notes.`,
 export function createSeedState(): AppState {
   return {
     version: APP_VERSION,
-    theme: 'orbit',
+    identity: DEFAULT_IDENTITY,
+    theme: 'axiom',
     sidebarCollapsed: false,
     projects,
     issues,

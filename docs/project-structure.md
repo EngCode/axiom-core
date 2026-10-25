@@ -1,6 +1,6 @@
 # Project structure
 
-Orbit is two applications in one repository: a React frontend and a Rust/Tauri desktop shell.
+Axiom Core is two applications in one repository: a React frontend and a Rust/Tauri desktop shell.
 Both live side by side so the UI can be developed in a browser and shipped inside the desktop app.
 
 ```text
@@ -23,6 +23,9 @@ personal-manager/
 │   │   ├── projects.tsx       /projects
 │   │   ├── notes.tsx          /notes
 │   │   ├── quick-capture.tsx  desktop capture window
+│   │   ├── documents.tsx      /documents (planned feature shell)
+│   │   ├── library.tsx        /library (data-layer status surface)
+│   │   ├── tools.tsx          /tools (docs, identity, appearance, data)
 │   │   └── docs.tsx           /docs reference viewer
 │   │
 │   ├── components/            shell, primitives and domain components
@@ -35,6 +38,7 @@ personal-manager/
 │   │   ├── issue-bits.tsx     status/priority icons, chips, pickers
 │   │   ├── issue-dialog.tsx   create/edit task dialog
 │   │   ├── markdown.tsx       dependency-free docs renderer
+│   │   ├── settings-dialog.tsx  personalization (app/workspace/owner)
 │   │   └── command-palette.tsx  ⌘K palette
 │   │
 │   └── lib/                   state, logic and adapters
@@ -47,6 +51,8 @@ personal-manager/
 │       ├── store.tsx          reducer, intent methods, persistence effects
 │       ├── ui.tsx             overlay state and global shortcuts
 │       ├── docs.ts            markdown library, sections, link resolution
+│       ├── identity.ts        defaults for name/workspace/owner
+│       ├── window.ts          native window title bridge
 │       ├── db.ts              Tauri ↔ SQLite bridge for the workspace
 │       ├── library-types.ts   media entity types
 │       ├── library-api.ts     media commands bridge

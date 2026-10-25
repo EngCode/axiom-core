@@ -1,3 +1,11 @@
+/**======> Reference By Comment <======
+ * ===> 01 - Imports & Style Maps
+ * ===> 02 - Button & Icon Primitives
+ * ===> 03 - Form Controls
+ * ===> 04 - Surfaces & Feedback
+ * ===> 05 - Overlays & Layout
+ */
+
 import type {
   ButtonHTMLAttributes,
   InputHTMLAttributes,
@@ -12,6 +20,8 @@ import { cn, initials } from '@/lib/utils'
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'
 type ButtonSize = 'sm' | 'md'
+
+//=====> Button & Icon Primitives <=====//
 
 const buttonVariants: Record<ButtonVariant, string> = {
   primary:
@@ -135,6 +145,8 @@ export function Field({
   )
 }
 
+//=====> Surfaces & Feedback <=====//
+
 export function Card({ className, children }: { className?: string; children: ReactNode }) {
   return (
     <section className={cn('rounded-card border border-line bg-surface', className)}>{children}</section>
@@ -166,6 +178,8 @@ export function CardHeader({
   )
 }
 
+//=====> Form Controls <=====//
+
 export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
@@ -189,7 +203,7 @@ export function Select({
     <div className="relative">
       <select
         className={cn(
-          'h-9 w-full appearance-none rounded-control border border-line bg-surface-2 py-0 pl-3 pr-8',
+          'h-9 w-full appearance-none rounded-control border border-line bg-surface-2 py-0 ps-3 pe-8',
           'text-[13px] text-fg transition-colors outline-none',
           'hover:border-line-strong focus:border-accent/60 focus:ring-2 focus:ring-accent/20',
           className,
@@ -198,7 +212,7 @@ export function Select({
       >
         {children}
       </select>
-      <ChevronDown className="pointer-events-none absolute top-1/2 right-2.5 size-3.5 -translate-y-1/2 text-fg-subtle" />
+      <ChevronDown className="pointer-events-none absolute top-1/2 end-2.5 size-3.5 -translate-y-1/2 text-fg-subtle" />
     </div>
   )
 }
@@ -289,6 +303,8 @@ export function PageHeader({
     </div>
   )
 }
+
+//=====> Overlays & Layout <=====//
 
 export function Modal({
   open,

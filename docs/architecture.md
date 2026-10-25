@@ -1,6 +1,6 @@
 # Architecture
 
-Orbit is a **native shell around a React application**. Rust owns the window, tray, global
+Axiom Core is a **native shell around a React application**. Rust owns the window, tray, global
 shortcut and database; React owns everything you see. The two communicate through typed Tauri
 commands carrying JSON.
 
@@ -31,7 +31,7 @@ on Windows 10/11.
 │  │ commands: load_state · save_state · load_library ·         │  │
 │  │           save_media_item · attach_media_copy · upsert_volume │
 │  │                                                            │  │
-│  │  data/db.rs  ──  SQLite  %APPDATA%\com.orbit.desktop\orbit.db │
+│  │  data/db.rs  ──  SQLite  %APPDATA%\com.axiom.core\axiom.db │
 │  └────────────────────────────┬───────────────────────────────┘  │
 │                               │ invoke (JSON)                     │
 │  ┌────────────────────────────▼───────────────────────────────┐  │
@@ -63,8 +63,8 @@ storage (SQLite now, sync later) touches one adapter.
 
 ## Desktop shell
 
-- **Startup** opens the main window. `ORBIT_START_HIDDEN=1` starts tray-only.
-- **Tray menu** — Quick capture · Open Orbit · Quit.
+- **Startup** opens the main window. `AXIOM_START_HIDDEN=1` starts tray-only.
+- **Tray menu** — Quick capture · Open Axiom Core · Quit.
 - **Quick capture** — `Ctrl+Alt+Space` creates a frameless 560×152 window on demand; it is
   destroyed when it loses focus or on `Esc`.
 - **Window lifecycle** — closing the main window **destroys** it. The tray keeps the process
@@ -110,9 +110,9 @@ Environment overrides (development / sandboxing only):
 
 | Variable | Effect |
 | --- | --- |
-| `ORBIT_DATA_DIR` | database folder instead of AppData |
-| `ORBIT_WEBVIEW_DATA_DIR` | WebView2 profile folder instead of AppData |
-| `ORBIT_START_HIDDEN=1` | start tray-only |
+| `AXIOM_DATA_DIR` | database folder instead of AppData |
+| `AXIOM_WEBVIEW_DATA_DIR` | WebView2 profile folder instead of AppData |
+| `AXIOM_START_HIDDEN=1` | start tray-only |
 
 ## Security boundaries
 

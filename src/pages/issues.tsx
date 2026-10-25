@@ -1,3 +1,9 @@
+/**======> Reference By Comment <======
+ * ===> 01 - Imports & Types
+ * ===> 02 - Filtering & Grouping
+ * ===> 03 - Page & Filter Primitive
+ */
+
 import { useMemo, useState, type ReactNode } from 'react'
 import { Plus, Search, SlidersHorizontal } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
@@ -130,13 +136,13 @@ export default function IssuesPage() {
 
         <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center xl:justify-end">
           <div className="relative min-w-0 flex-1 sm:max-w-[220px]">
-            <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-fg-subtle" />
+            <Search className="pointer-events-none absolute top-1/2 start-2.5 size-3.5 -translate-y-1/2 text-fg-subtle" />
             <Input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Filter issues…"
               aria-label="Filter issues"
-              className="h-8 pl-8 text-[12.5px]"
+              className="h-8 ps-8 text-[12.5px]"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -206,7 +212,7 @@ export default function IssuesPage() {
                 <span className="hidden text-[10.5px] text-fg-subtle/70 sm:inline">
                   · {STATUS_META[status].hint}
                 </span>
-                <div className="ml-auto">
+                <div className="ms-auto">
                   <IconButton
                     label={`New ${STATUS_META[status].label.toLowerCase()} issue`}
                     onClick={() => addIssue(status)}

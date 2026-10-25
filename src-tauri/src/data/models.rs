@@ -1,3 +1,9 @@
+/*======> Reference By Comment <======
+ * ===> 01 - Workspace Models
+ * ===> 02 - Identity
+ * ===> 03 - Library Models
+ */
+
 use serde::{Deserialize, Serialize};
 
 /// A snapshot of the workspace exactly as the frontend holds it.
@@ -6,6 +12,8 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub struct AppState {
     pub version: u32,
+    #[serde(default)]
+    pub identity: Identity,
     pub theme: String,
     pub sidebar_collapsed: bool,
     pub projects: Vec<Project>,
@@ -153,4 +161,21 @@ pub struct LibrarySnapshot {
     pub copies: Vec<MediaCopy>,
     pub volumes: Vec<Volume>,
     pub progress: Vec<MediaProgress>,
+}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Identity {
+    pub app_name: String,
+    pub workspace_name: String,
+    pub owner_name: String,
+}
+
+impl Default for Identity {
+    fn default() -> Self {
+        Self {
+            app_name: "Axiom Core".to_string(),
+            workspace_name: "Personal".to_string(),
+            owner_name: "Abdullah".to_string(),
+        }
+    }
 }

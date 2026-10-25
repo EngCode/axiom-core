@@ -1,6 +1,6 @@
-# Orbit documentation
+# Axiom Core documentation
 
-Orbit is a personal workspace and media library for Windows: tasks, projects and notes in one
+Axiom Core is a personal workspace and media library for Windows: tasks, projects and notes in one
 keyboard-first interface, wrapped in a native Tauri shell with a local SQLite database.
 
 This folder explains **what exists**, **where it lives**, and **what is still planned**. Every
@@ -29,6 +29,9 @@ page and feature has its own document; the product-level specs live in
 | `/projects` | Projects | [projects.md](pages/projects.md) | progress cards, create, archive, restore, per-project task |
 | `/notes` | Notes | [notes.md](pages/notes.md) | note list, search, editor, tags, pin, autosave |
 | `/notes?note=<id>` | Note deep link | [notes.md](pages/notes.md) | opens a specific note |
+| `/documents` | Documents | [documents.md](pages/documents.md) | planned long-form pages; status surface only |
+| `/library` | Library | [library.md](pages/library.md) | media kinds overview; browsing planned |
+| `/tools` | Tools | [tools.md](pages/tools.md) | docs, personalization, appearance, reset |
 | *(desktop window)* | Quick capture | [quick-capture.md](features/quick-capture.md) | global hotkey, one-line capture |
 
 Unknown routes redirect to the dashboard.

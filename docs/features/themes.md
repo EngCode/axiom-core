@@ -12,7 +12,7 @@ for those tokens; components never know which theme is active.
 
 | Theme | Mode | Character | Display font | Radius card / control |
 | --- | --- | --- | --- | --- |
-| **Orbit** | dark | violet on near-black (default) | Inter | 12 / 8 px |
+| **Axiom** | dark | violet on near-black (default) | Inter | 12 / 8 px |
 | **Paper** | light | warm paper, rust accent, serif headings | Georgia | 6 / 4 px |
 | **Graphite** | dark | neutral dark, cyan accent | Inter | 8 / 6 px |
 
@@ -25,7 +25,7 @@ for those tokens; components never know which theme is active.
 
 ## How a theme applies
 
-1. `index.html` runs a tiny pre-paint script: reads `orbit.state.v1` from localStorage, normalises
+1. `index.html` runs a tiny pre-paint script: reads `axiom.state.v1` from localStorage, normalises
    the theme id, sets `data-theme` on `<html>` and toggles the `dark` class. This avoids a flash of
    the wrong theme.
 2. `AppProvider` repeats the same logic whenever the theme changes: sets `data-theme` and the
@@ -34,7 +34,7 @@ for those tokens; components never know which theme is active.
    `bg-surface` and `text-fg-muted` resolve through `@theme inline`.
 4. The theme id is persisted in `AppState.theme` → localStorage and SQLite (`meta.theme`).
 
-Legacy `dark` / `light` values are mapped to `orbit` / `paper` on load.
+Legacy `dark` / `light` values are mapped to `axiom` / `paper` on load.
 
 ## Adding a theme
 

@@ -1,3 +1,7 @@
+/**======> Reference By Comment <======
+ * ===> 01 - Domain Vocabularies
+ */
+
 import type { Priority, ProjectColor, ProjectStatus, Status } from './types'
 
 export const STATUS_ORDER: Status[] = ['backlog', 'todo', 'in_progress', 'done']

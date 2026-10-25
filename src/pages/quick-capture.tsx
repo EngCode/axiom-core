@@ -24,7 +24,7 @@ export function QuickCaptureApp() {
 }
 
 function QuickCapture() {
-  const { addIssue } = useApp()
+  const { addIssue, state } = useApp()
   const [title, setTitle] = useState('')
   const [saved, setSaved] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -104,8 +104,8 @@ function QuickCapture() {
         data-tauri-drag-region
         className="flex items-center justify-between px-1 text-[10.5px] text-fg-subtle"
       >
-        <span>{saved ? `Added to Orbit · due ${localISODate()}` : 'Enter to capture · Esc to dismiss'}</span>
-        <span className="text-fg-subtle/70">Orbit · quick capture</span>
+        <span>{saved ? `Added to ${state.identity.appName} · due ${localISODate()}` : 'Enter to capture · Esc to dismiss'}</span>
+        <span className="text-fg-subtle/70">{state.identity.appName} · quick capture</span>
       </div>
     </div>
   )

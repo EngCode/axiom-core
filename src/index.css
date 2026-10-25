@@ -5,6 +5,9 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Direction is explicit so RTL works for any language, not only Arabic/Hebrew scripts. */
+@custom-variant rtl (&:where([dir='rtl'], [dir='rtl'] *));
+
 @theme inline {
   --color-canvas: var(--canvas);
   --color-surface: var(--surface);
@@ -40,7 +43,7 @@
 
 /* Themes: every theme sets the same semantic tokens. Components never use raw colours. */
 :root,
-[data-theme='orbit'] {
+[data-theme='axiom'] {
   color-scheme: dark;
   --theme-display-font: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --theme-radius-card: 12px;

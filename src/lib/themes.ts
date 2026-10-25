@@ -1,3 +1,8 @@
+/**======> Reference By Comment <======
+ * ===> 01 - Theme Registry
+ * ===> 02 - Resolution & Cycling
+ */
+
 export interface ThemeDefinition {
   id: ThemeId
   name: string
@@ -7,12 +12,12 @@ export interface ThemeDefinition {
   swatch: [string, string, string]
 }
 
-export type ThemeId = 'orbit' | 'paper' | 'graphite'
+export type ThemeId = 'axiom' | 'paper' | 'graphite'
 
 export const THEMES: ThemeDefinition[] = [
   {
-    id: 'orbit',
-    name: 'Orbit',
+    id: 'axiom',
+    name: 'Axiom',
     description: 'Violet on near-black. The default.',
     mode: 'dark',
     swatch: ['#07080a', '#8b86ff', '#edeef3'],
@@ -33,7 +38,7 @@ export const THEMES: ThemeDefinition[] = [
   },
 ]
 
-export const DEFAULT_THEME: ThemeId = 'orbit'
+export const DEFAULT_THEME: ThemeId = 'axiom'
 
 export function isThemeId(value: unknown): value is ThemeId {
   return typeof value === 'string' && THEMES.some((theme) => theme.id === value)
@@ -41,7 +46,7 @@ export function isThemeId(value: unknown): value is ThemeId {
 
 /** Accepts legacy `dark` / `light` values from earlier builds. */
 export function normalizeTheme(value: unknown): ThemeId {
-  if (value === 'dark') return 'orbit'
+  if (value === 'dark' || value === 'orbit') return 'axiom'
   if (value === 'light') return 'paper'
   return isThemeId(value) ? value : DEFAULT_THEME
 }

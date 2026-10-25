@@ -1,4 +1,4 @@
-# Orbit — a personal workspace
+# Axiom Core — a personal workspace
 
 A personal Linear/Notion hybrid: tasks, projects and notes in one quiet, keyboard-first
 interface. Local-only, no account, no backend — your data lives in the browser.
@@ -62,13 +62,13 @@ pnpm dev          # http://localhost:5273
 
 The native shell lives in `src-tauri/`. Current behaviour:
 
-- **Tray first** — the app stays resident with a tray icon: *Quick capture*, *Open Orbit*, *Quit*.
+- **Tray first** — the app stays resident with a tray icon: *Quick capture*, *Open Axiom Core*, *Quit*.
 - **Global quick capture** — `Ctrl+Alt+Space` anywhere opens a frameless input window; `Enter`
   files a task due today, `Esc` or losing focus dismisses it.
 - **Windows are disposable** — closing the main window destroys it (no hidden WebView2
   processes); the tray or a second launch recreates it.
-- **Single instance** — launching Orbit again focuses the existing app instead of starting another.
-- **First launch opens the window**; `ORBIT_START_HIDDEN=1` starts tray-only.
+- **Single instance** — launching Axiom Core again focuses the existing app instead of starting another.
+- **First launch opens the window**; `AXIOM_START_HIDDEN=1` starts tray-only.
 
 Measured on this machine, production build (`cargo build --release --features custom-protocol`):
 
@@ -93,11 +93,11 @@ cargo run --manifest-path src-tauri/Cargo.toml   # terminal 2 — desktop shell
 
 | Variable | Effect |
 | --- | --- |
-| `ORBIT_START_HIDDEN=1` | Start in the tray without opening a window |
-| `ORBIT_WEBVIEW_DATA_DIR=<path>` | Keep the WebView2 profile somewhere other than AppData |
+| `AXIOM_START_HIDDEN=1` | Start in the tray without opening a window |
+| `AXIOM_WEBVIEW_DATA_DIR=<path>` | Keep the WebView2 profile somewhere other than AppData |
 
 The second one exists because a sandboxed terminal cannot write the default
-`%LOCALAPPDATA%\com.orbit.desktop` profile; outside such a session it is unnecessary.
+`%LOCALAPPDATA%\com.axiom.core` profile; outside such a session it is unnecessary.
 
 SQLite persistence is in place (`load_state` / `save_state` commands over a WAL database). The
 Library module is next (see [LIBRARY.md](docs/resources/LIBRARY.md)); the browser build remains the fastest way
@@ -105,7 +105,7 @@ to iterate on the UI.
 
 ## Themes and design system
 
-Three themes ship: **Orbit** (violet on near-black, default), **Paper** (warm editorial light,
+Three themes ship: **Axiom** (violet on near-black, default), **Paper** (warm editorial light,
 serif headings, rust accent) and **Graphite** (neutral dark, cyan accent). Switch from the palette
 icon in the sidebar or top bar, or `⌘K` → *Theme*. The choice is stored in `AppState` and in
 SQLite, and the theme is applied before first paint.
@@ -151,22 +151,29 @@ Data is defined in `src/lib/types.ts`; derived values (counts, progress, focus o
 
 ## Your data
 
-In the desktop app, state lives in **SQLite** at `%APPDATA%\com.orbit.desktop\orbit.db`
-(override with `ORBIT_DATA_DIR`). The database runs in WAL mode, carries a versioned schema
+In the desktop app, state lives in **SQLite** at `%APPDATA%\com.axiom.core\axiom.db`
+(override with `AXIOM_DATA_DIR`). The database runs in WAL mode, carries a versioned schema
 (`PRAGMA user_version`) and mirrors the workspace: `projects`, `issues`, `notes`, `activity`.
 The Library tables are already prepared — `media_kinds` (seeded with six editable kinds),
 `media_items`, `volumes`, `media_copies`, `media_progress`, `tags` — even though that UI is
 still ahead of us.
 
-The browser build and the in-app cache still use `localStorage` (`orbit.state.v1`), which is
+The browser build and the in-app cache still use `localStorage` (`axiom.state.v1`), which is
 also what carries state between the main window and quick capture. Saves to SQLite are debounced
 by 400 ms and sent as one snapshot per change — exact and simple at personal scale, to be
 replaced by per-entity commands when the Library scanner lands.
 
-**Reset demo data** restores the seed workspace in both stores. Deleting the database file while
-Orbit is closed resets it completely. There is no sync yet — export/import is planned (see
+**Reset demo data** restores the seed workspace in both stores (including the default identity). Deleting the database file while
+Axiom Core is closed resets it completely. There is no sync yet — export/import is planned (see
 [LIBRARY.md](docs/resources/LIBRARY.md)).
 
+## Personalization
+
+Rename the app, the workspace and yourself from the **gear** in the sidebar footer, or `⌘K` →
+*Personalization*. The sidebar brand, greeting, window title and quick capture all update
+immediately; values are stored with your data (`identity.*` in SQLite, inside `axiom.state.v1` in
+localStorage). Defaults live in `src/lib/identity.ts`; the executable and bundle metadata live in
+`src-tauri/tauri.conf.json`.
 ## Media data layer
 
 The Library tables and commands exist ahead of the UI:

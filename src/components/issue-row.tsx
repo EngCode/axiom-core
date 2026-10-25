@@ -1,3 +1,8 @@
+/**======> Reference By Comment <======
+ * ===> 01 - Imports
+ * ===> 02 - Issue Row
+ */
+
 import { PRIORITY_META } from '@/lib/meta'
 import { useApp } from '@/lib/store'
 import type { Issue } from '@/lib/types'
@@ -58,7 +63,7 @@ export function IssueRow({
           open()
         }}
         className={cn(
-          'min-w-0 flex-1 truncate text-left text-[13px] outline-none',
+          'min-w-0 flex-1 truncate text-start text-[13px] outline-none',
           'focus-visible:rounded focus-visible:ring-2 focus-visible:ring-accent/40',
           done ? 'text-fg-subtle line-through decoration-fg-subtle/40' : 'text-fg',
         )}

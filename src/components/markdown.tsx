@@ -1,3 +1,10 @@
+/**======> Reference By Comment <======
+ * ===> 01 - Types & Inline Grammar
+ * ===> 02 - Block Parser
+ * ===> 03 - Inline Renderer
+ * ===> 04 - Block Renderer & Markdown Export
+ */
+
 import { useMemo, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -41,6 +48,8 @@ function splitRow(line: string): string[] {
 function isFence(line: string): RegExpMatchArray | null {
   return line.match(/^```(\w*)\s*$/)
 }
+
+//=====> Block Parser <=====//
 
 function parseBlocks(markdown: string): Block[] {
   const lines = markdown.replace(/\r\n/g, '\n').split('\n')
@@ -142,6 +151,8 @@ function parseBlocks(markdown: string): Block[] {
 
   return blocks
 }
+
+//=====> Inline Renderer <=====//
 
 function renderInline(text: string, docSlug: string, depth = 0): ReactNode[] {
   if (depth > 4) return [text]
@@ -252,6 +263,8 @@ function renderInline(text: string, docSlug: string, depth = 0): ReactNode[] {
   return nodes
 }
 
+//=====> Block Renderer <=====//
+
 function renderBlock(block: Block, key: number, docSlug: string) {
   switch (block.kind) {
     case 'heading': {
@@ -315,7 +328,7 @@ function renderBlock(block: Block, key: number, docSlug: string) {
         <ul
           key={key}
           className={cn(
-            'my-3 space-y-1 pl-5 text-[13px] leading-6 text-fg-muted',
+            'my-3 space-y-1 ps-5 text-[13px] leading-6 text-fg-muted',
             block.ordered ? 'list-decimal' : 'list-disc',
           )}
         >
@@ -334,7 +347,7 @@ function renderBlock(block: Block, key: number, docSlug: string) {
       return (
         <blockquote
           key={key}
-          className="my-3 border-l-2 border-accent/40 pl-3 text-[12.5px] leading-6 text-fg-muted italic"
+          className="my-3 border-l-2 border-accent/40 ps-3 text-[12.5px] leading-6 text-fg-muted italic"
         >
           {renderInline(block.text, docSlug)}
         </blockquote>
@@ -345,7 +358,7 @@ function renderBlock(block: Block, key: number, docSlug: string) {
           key={key}
           className="slim-scroll my-4 overflow-x-auto rounded-control border border-line"
         >
-          <table className="w-full border-collapse text-left text-[12px]">
+          <table className="w-full border-collapse text-start text-[12px]">
             <thead>
               <tr>
                 {block.header.map((cell, cellIndex) => (
@@ -381,6 +394,8 @@ function renderBlock(block: Block, key: number, docSlug: string) {
       return null
   }
 }
+
+//=====> Markdown Export <=====//
 
 export function Markdown({ content, docSlug }: { content: string; docSlug: string }) {
   const blocks = useMemo(() => parseBlocks(content), [content])

@@ -1,4 +1,4 @@
-# Orbit design system
+# Axiom Core design system
 
 The design should be changeable without touching features. That means every colour, radius,
 font and shadow a component uses is a **semantic token**, never a literal value.
@@ -53,13 +53,13 @@ Type scale in use: 10–11 px metadata, 12–13 px UI, 20–27 px headings, 30�
 | `--radius-control` | `rounded-control` | buttons, inputs, menu rows |
 | `--shadow-sm/md/lg` | `shadow-sm` … | floating layers only |
 
-Radii are per-theme: Orbit is 12/8 px, Paper 6/4 px, Graphite 8/6 px.
+Radii are per-theme: Axiom is 12/8 px, Paper 6/4 px, Graphite 8/6 px.
 
 ## 2. Themes
 
 | Theme | Mode | Character | Display font | Radii |
 | --- | --- | --- | --- | --- |
-| **Orbit** (default) | dark | violet on near-black, current app | Inter | 12 / 8 |
+| **Axiom** (default) | dark | violet on near-black, current app | Inter | 12 / 8 |
 | **Paper** | light | warm paper, rust accent, editorial | Georgia serif | 6 / 4 |
 | **Graphite** | dark | neutral, cyan accent, tighter | Inter | 8 / 6 |
 
@@ -83,7 +83,7 @@ of `AppState` and is persisted to SQLite (`meta.theme`) and localStorage.
 3. Nothing else: the picker, command palette, first-paint script and persistence read from that
    list.
 
-Legacy values `dark` / `light` are mapped to `orbit` / `paper` on load, so old saves keep working.
+Legacy values `dark` / `light` are mapped to `axiom` / `paper` on load, so old saves keep working.
 
 ## 3. Components
 

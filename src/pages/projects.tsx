@@ -1,3 +1,9 @@
+/**======> Reference By Comment <======
+ * ===> 01 - Imports
+ * ===> 02 - Project Card
+ * ===> 03 - Project Dialog
+ */
+
 import { useEffect, useState, type FormEvent } from 'react'
 import { Archive, ArchiveRestore, ArrowUpRight, FolderKanban, FolderPlus, Plus } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -174,7 +180,7 @@ function ProjectCard({
         </Button>
         <Link
           to={`/issues?project=${project.id}`}
-          className="ml-auto inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[11.5px] text-fg-subtle transition-colors hover:text-fg"
+          className="ms-auto inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[11.5px] text-fg-subtle transition-colors hover:text-fg"
         >
           Open tasks
           <ArrowUpRight className="size-3" />

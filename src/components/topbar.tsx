@@ -1,7 +1,12 @@
+/**======> Reference By Comment <======
+ * ===> 01 - Imports & Page Titles
+ * ===> 02 - Top Bar Component
+ */
+
 import { ChevronRight, Menu, Plus, Search } from 'lucide-react'
 import { useLocation } from 'react-router-dom'
 
-import { WORKSPACE } from '@/lib/data'
+import { useApp } from '@/lib/store'
 import { useUI } from '@/lib/ui'
 
 import { ThemePicker } from './theme-picker'
@@ -13,9 +18,13 @@ const PAGE_TITLES: Record<string, string> = {
   '/projects': 'Projects',
   '/notes': 'Notes',
   '/docs': 'Documentation',
+  '/documents': 'Documents',
+  '/library': 'Library',
+  '/tools': 'Tools',
 }
 
 export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
+  const { state } = useApp()
   const { openPalette, openIssueDialog } = useUI()
   const location = useLocation()
   const title = PAGE_TITLES[location.pathname] ?? 'Not found'
@@ -27,12 +36,12 @@ export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
       </IconButton>
 
       <div className="flex min-w-0 items-center gap-1.5 text-[12.5px]">
-        <span className="hidden text-fg-subtle sm:inline">{WORKSPACE.kind}</span>
-        <ChevronRight className="hidden size-3 shrink-0 text-fg-subtle/60 sm:inline" />
+        <span className="hidden text-fg-subtle sm:inline">{state.identity.workspaceName} workspace</span>
+        <ChevronRight className="hidden size-3 shrink-0 text-fg-subtle/60 rtl:rotate-180 sm:inline" />
         <span className="truncate font-medium text-fg">{title}</span>
       </div>
 
-      <div className="ml-auto flex items-center gap-1.5">
+      <div className="ms-auto flex items-center gap-1.5">
         <Button
           variant="secondary"
           size="sm"
@@ -41,7 +50,7 @@ export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
         >
           <Search className="size-3.5" />
           Search
-          <Kbd className="ml-2">⌘K</Kbd>
+          <Kbd className="ms-2">⌘K</Kbd>
         </Button>
 
         <Button
@@ -56,7 +65,7 @@ export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
 
         <ThemePicker className="hidden sm:block" />
 
-        <Avatar name={WORKSPACE.owner} size="md" className="ml-0.5" />
+        <Avatar name={state.identity.ownerName} size="md" className="ms-0.5" />
       </div>
     </header>
   )

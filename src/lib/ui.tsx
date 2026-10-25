@@ -1,3 +1,9 @@
+/**======> Reference By Comment <======
+ * ===> 01 - Types & Context
+ * ===> 02 - Provider & Shortcuts
+ * ===> 03 - UI Hook
+ */
+
 import {
   createContext,
   useCallback,
@@ -24,6 +30,8 @@ interface IssueDialogState {
   projectId?: string | null
 }
 
+//=====> Provider & Shortcuts <=====//
+
 interface UIContextValue {
   paletteOpen: boolean
   openPalette: () => void
@@ -31,15 +39,21 @@ interface UIContextValue {
   issueDialog: IssueDialogState
   openIssueDialog: (config?: IssueDialogConfig) => void
   closeIssueDialog: () => void
+  settingsOpen: boolean
+  openSettings: () => void
+  closeSettings: () => void
 }
 
 const UIContext = createContext<UIContextValue | null>(null)
 
 const CLOSED_DIALOG: IssueDialogState = { open: false, issueId: null }
 
+//=====> UI Hook <=====//
+
 export function UIProvider({ children }: { children: ReactNode }) {
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [issueDialog, setIssueDialog] = useState<IssueDialogState>(CLOSED_DIALOG)
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   const openPalette = useCallback(() => setPaletteOpen(true), [])
   const closePalette = useCallback(() => setPaletteOpen(false), [])
@@ -54,6 +68,9 @@ export function UIProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const closeIssueDialog = useCallback(() => setIssueDialog(CLOSED_DIALOG), [])
+
+  const openSettings = useCallback(() => setSettingsOpen(true), [])
+  const closeSettings = useCallback(() => setSettingsOpen(false), [])
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -91,8 +108,21 @@ export function UIProvider({ children }: { children: ReactNode }) {
       issueDialog,
       openIssueDialog,
       closeIssueDialog,
+      settingsOpen,
+      openSettings,
+      closeSettings,
     }),
-    [paletteOpen, openPalette, closePalette, issueDialog, openIssueDialog, closeIssueDialog],
+    [
+      paletteOpen,
+      openPalette,
+      closePalette,
+      issueDialog,
+      openIssueDialog,
+      closeIssueDialog,
+      settingsOpen,
+      openSettings,
+      closeSettings,
+    ],
   )
 
   return <UIContext.Provider value={value}>{children}</UIContext.Provider>

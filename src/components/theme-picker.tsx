@@ -1,3 +1,8 @@
+/**======> Reference By Comment <======
+ * ===> 01 - Imports
+ * ===> 02 - Theme Menu
+ */
+
 import { useEffect, useRef, useState } from 'react'
 import { Check, Palette } from 'lucide-react'
 
@@ -55,7 +60,7 @@ export function ThemePicker({
           aria-label="Theme"
           className={cn(
             'absolute z-40 w-60 overflow-hidden rounded-card border border-line bg-surface p-1 shadow-lg',
-            placement === 'up' ? 'bottom-full left-0 mb-2' : 'top-full left-0 mt-2',
+            placement === 'up' ? 'bottom-full start-0 mb-2' : 'top-full start-0 mt-2',
           )}
         >
           {THEMES.map((theme) => {
@@ -71,7 +76,7 @@ export function ThemePicker({
                   setOpen(false)
                 }}
                 className={cn(
-                  'flex w-full items-center gap-2.5 rounded-control px-2 py-1.5 text-left transition-colors',
+                  'flex w-full items-center gap-2.5 rounded-control px-2 py-1.5 text-start transition-colors',
                   active ? 'bg-surface-2' : 'hover:bg-surface-2/70',
                 )}
               >

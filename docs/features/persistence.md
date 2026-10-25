@@ -11,10 +11,10 @@ store; localStorage is the instant-start cache and the channel between windows.
 
 | Store | Location | Purpose |
 | --- | --- | --- |
-| SQLite | `%APPDATA%\com.orbit.desktop\orbit.db` | durable workspace + library |
-| localStorage | WebView2 profile, key `orbit.state.v1` | instant start, cross-window sync, browser mode |
+| SQLite | `%APPDATA%\com.axiom.core\axiom.db` | durable workspace + library |
+| localStorage | WebView2 profile, key `axiom.state.v1` | instant start, cross-window sync, browser mode |
 
-Development overrides: `ORBIT_DATA_DIR` (database folder) and `ORBIT_WEBVIEW_DATA_DIR` (WebView2
+Development overrides: `AXIOM_DATA_DIR` (database folder) and `AXIOM_WEBVIEW_DATA_DIR` (WebView2
 profile). Both exist for sandboxed/dev launches; normal installs never set them.
 
 ## Database
@@ -44,7 +44,7 @@ will produce many rows.
 
 1. On mount, `AppProvider` initialises from localStorage (synchronous, no spinner).
 2. A second effect calls `load_state` in Tauri. If the database has data (`meta.initialized = 1`),
-   the result replaces state; the theme id is normalised (`dark` → `orbit`, `light` → `paper`).
+   the result replaces state; the theme id is normalised (`dark` → `axiom`, `light` → `paper`).
 3. If the database is empty, `load_state` returns `null` and the seed state is written by the save
    effect — that is how a fresh install gets its demo workspace.
 
@@ -57,7 +57,7 @@ localStorage, which fires a `storage` event in the other window; that window dis
 ## Reset
 
 Sidebar → **Reset demo data** (confirmed) dispatches `state/reset`, which rebuilds the seed state;
-the normal save path then overwrites both stores. Deleting `orbit.db` while the app is closed has
+the normal save path then overwrites both stores. Deleting `axiom.db` while the app is closed has
 the same effect on next launch.
 
 ## Failure behaviour
@@ -69,6 +69,15 @@ the same effect on next launch.
 - Two windows writing whole snapshots is last-writer-wins; a simultaneous edit in both could drop
   one side. Granular workspace commands will remove this limitation.
 
+## Legacy data
+
+This release was previously called **Orbit**. Migration is automatic:
+
+- localStorage falls back from `axiom.state.v1` to `orbit.state.v1` and rewrites the new key.
+- the database renames `orbit.db` (and its `-wal` / `-shm` files) to `axiom.db` on first start.
+- environment overrides prefer `AXIOM_DATA_DIR` / `AXIOM_WEBVIEW_DATA_DIR` / `AXIOM_START_HIDDEN`
+  and still accept the old `ORBIT_*` names.
+- legacy theme ids `orbit` and `dark` map to `axiom`.
 ## Verification performed
 
 - Schema and data inspected directly: 4 projects, 17 issues, 5 notes, 6 activity rows, 6 media

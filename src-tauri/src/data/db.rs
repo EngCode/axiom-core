@@ -1,9 +1,16 @@
+/*======> Reference By Comment <======
+ * ===> 01 - Schema
+ * ===> 02 - Migration & Seed
+ * ===> 03 - Workspace State
+ * ===> 04 - Library Queries
+ */
+
 use std::path::Path;
 
 use rusqlite::{params, Connection, OptionalExtension, Result};
 
 use super::models::{
-    ActivityEntry, AppState, Counters, Issue, LibrarySnapshot, MediaCopy, MediaItem, MediaKind,
+    ActivityEntry, AppState, Counters, Identity, Issue, LibrarySnapshot, MediaCopy, MediaItem, MediaKind,
     MediaProgress, Note, Project, Volume,
 };
 
@@ -163,6 +170,8 @@ const KIND_SEEDS: &[(&str, &str, &str, &str, i64, &str, &str)] = &[
     ("music", "Music", "music", "cyan", 5, "none", r#"[{"key":"artist","label":"Artist","type":"text"}]"#),
 ];
 
+//=====> Migration & Seed <=====//
+
 pub fn open(path: &Path) -> Result<Connection> {
     if let Some(parent) = path.parent() {
         let _ = std::fs::create_dir_all(parent);
@@ -215,13 +224,24 @@ fn set_meta(connection: &Connection, key: &str, value: &str) -> Result<()> {
 
 /// Returns `None` until the app has saved its first snapshot; the frontend then
 /// seeds the database itself.
+//=====> Workspace State <=====//
+
 pub fn load_state(connection: &Connection) -> Result<Option<AppState>> {
     if meta_value(connection, "initialized")?.as_deref() != Some("1") {
         return Ok(None);
     }
 
-    let theme = meta_value(connection, "theme")?.unwrap_or_else(|| "orbit".to_string());
+    let theme = meta_value(connection, "theme")?.unwrap_or_else(|| "axiom".to_string());
     let sidebar_collapsed = meta_value(connection, "sidebarCollapsed")?.as_deref() == Some("1");
+
+    let identity = Identity {
+        app_name: meta_value(connection, "identity.appName")?
+            .unwrap_or_else(|| "Axiom Core".to_string()),
+        workspace_name: meta_value(connection, "identity.workspaceName")?
+            .unwrap_or_else(|| "Personal".to_string()),
+        owner_name: meta_value(connection, "identity.ownerName")?
+            .unwrap_or_else(|| "Abdullah".to_string()),
+    };
 
     let mut project_stmt = connection.prepare(
         "SELECT id, name, key, description, color, status, created_at, target_date
@@ -307,6 +327,7 @@ pub fn load_state(connection: &Connection) -> Result<Option<AppState>> {
 
     Ok(Some(AppState {
         version: SCHEMA_VERSION as u32,
+        identity,
         theme,
         sidebar_collapsed,
         projects,
@@ -403,6 +424,13 @@ pub fn save_state(connection: &mut Connection, state: &AppState) -> Result<()> {
     )?;
 
     set_meta(&transaction, "theme", &state.theme)?;
+    set_meta(&transaction, "identity.appName", &state.identity.app_name)?;
+    set_meta(
+        &transaction,
+        "identity.workspaceName",
+        &state.identity.workspace_name,
+    )?;
+    set_meta(&transaction, "identity.ownerName", &state.identity.owner_name)?;
     set_meta(
         &transaction,
         "sidebarCollapsed",
@@ -418,6 +446,8 @@ fn json_value(raw: String) -> serde_json::Value {
 
 /// Reads the Library tables. The workspace snapshot and the library are separate
 /// on purpose: media rows will be written by the scanner, not by the UI snapshot.
+//=====> Library Queries <=====//
+
 pub fn load_library(connection: &Connection) -> Result<LibrarySnapshot> {
     let mut kind_stmt = connection.prepare(
         "SELECT id, key, name, icon, color, sort_order, hidden, progress_unit, fields_json

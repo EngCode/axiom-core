@@ -1,3 +1,7 @@
+/**======> Reference By Comment <======
+ * ===> 01 - Workspace Database Bridge
+ */
+
 import { invoke } from '@tauri-apps/api/core'
 
 import type { AppState } from './types'
@@ -9,7 +13,7 @@ export async function loadStateFromDisk(): Promise<AppState | null> {
   try {
     return await invoke<AppState | null>('load_state')
   } catch (error) {
-    console.error('Orbit: could not load the database', error)
+    console.error('Axiom Core: could not load the database', error)
     return null
   }
 }
@@ -19,6 +23,6 @@ export async function saveStateToDisk(state: AppState): Promise<void> {
   try {
     await invoke('save_state', { state })
   } catch (error) {
-    console.error('Orbit: could not write to the database', error)
+    console.error('Axiom Core: could not write to the database', error)
   }
 }

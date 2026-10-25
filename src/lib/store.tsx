@@ -1,3 +1,11 @@
+/**======> Reference By Comment <======
+ * ===> 01 - Action Model
+ * ===> 02 - Reducer
+ * ===> 03 - Persistence Helpers
+ * ===> 04 - Context & Provider
+ * ===> 05 - App Hook
+ */
+
 import {
   createContext,
   useCallback,
@@ -8,12 +16,15 @@ import {
   type ReactNode,
 } from 'react'
 
-import { APP_VERSION, STORAGE_KEY, createSeedState } from './data'
+import { APP_VERSION, LEGACY_STORAGE_KEY, STORAGE_KEY, createSeedState } from './data'
 import { loadStateFromDisk, saveStateToDisk } from './db'
+import { normalizeIdentity } from './identity'
 import { normalizeTheme, themeMeta } from './themes'
+import { setWindowTitle } from './window'
 import { isTauri } from './tauri'
 import type {
   AppState,
+  Identity,
   Issue,
   IssueInput,
   Note,
@@ -24,6 +35,8 @@ import type {
   Theme,
 } from './types'
 import { localISODate, projectKeyFromName, uid } from './utils'
+
+//=====> Action Model <=====//
 
 type Action =
   | { type: 'issue/add'; issue: Issue }
@@ -38,6 +51,7 @@ type Action =
   | { type: 'sidebar/toggle' }
   | { type: 'state/reset' }
   | { type: 'state/replace'; state: AppState }
+  | { type: 'identity/update'; patch: Partial<Identity> }
 
 function withActivity(
   state: AppState,
@@ -47,6 +61,8 @@ function withActivity(
   const entry = { id: uid(), kind, message, at: new Date().toISOString() }
   return { ...state, activity: [entry, ...state.activity].slice(0, 60) }
 }
+
+//=====> Reducer <=====//
 
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
@@ -157,16 +173,22 @@ function reducer(state: AppState, action: Action): AppState {
     case 'state/replace':
       return action.state
 
+    case 'identity/update':
+      return { ...state, identity: normalizeIdentity({ ...state.identity, ...action.patch }) }
+
     default:
       return state
   }
 }
 
+//=====> Persistence Helpers <=====//
+
 function loadState(fresh = false): AppState {
   const seed = createSeedState()
   if (fresh || typeof window === 'undefined') return seed
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY)
+    const raw =
+      window.localStorage.getItem(STORAGE_KEY) ?? window.localStorage.getItem(LEGACY_STORAGE_KEY)
     if (!raw) return seed
     const parsed = JSON.parse(raw) as Partial<AppState>
     if (!parsed || parsed.version !== APP_VERSION) return seed
@@ -174,6 +196,7 @@ function loadState(fresh = false): AppState {
       ...seed,
       ...parsed,
       theme: normalizeTheme(parsed.theme),
+      identity: normalizeIdentity(parsed.identity),
       projects: Array.isArray(parsed.projects) ? parsed.projects : seed.projects,
       issues: Array.isArray(parsed.issues) ? parsed.issues : seed.issues,
       notes: Array.isArray(parsed.notes) ? parsed.notes : seed.notes,
@@ -184,6 +207,8 @@ function loadState(fresh = false): AppState {
     return seed
   }
 }
+
+//=====> Context & Provider <=====//
 
 interface AppContextValue {
   state: AppState
@@ -198,6 +223,7 @@ interface AppContextValue {
   toggleNotePin: (id: string) => void
   addProject: (input: ProjectInput) => void
   updateProject: (id: string, patch: Partial<Project>) => void
+  updateIdentity: (patch: Partial<Identity>) => void
   setTheme: (theme: Theme) => void
   toggleSidebar: () => void
   resetData: () => void
@@ -231,7 +257,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     void loadStateFromDisk().then((persisted) => {
       if (cancelled || !persisted) return
       if (persisted.version === APP_VERSION) {
-        dispatch({ type: 'state/replace', state: { ...persisted, theme: normalizeTheme(persisted.theme) } })
+        dispatch({
+          type: 'state/replace',
+          state: {
+            ...persisted,
+            theme: normalizeTheme(persisted.theme),
+            identity: normalizeIdentity(persisted.identity),
+          },
+        })
       }
     })
     return () => {
@@ -247,7 +280,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       try {
         const next = JSON.parse(event.newValue) as AppState
         if (next && next.version === APP_VERSION) {
-          dispatch({ type: 'state/replace', state: { ...next, theme: normalizeTheme(next.theme) } })
+          dispatch({
+            type: 'state/replace',
+            state: {
+              ...next,
+              theme: normalizeTheme(next.theme),
+              identity: normalizeIdentity(next.identity),
+            },
+          })
         }
       } catch {
         /* ignore malformed external writes */
@@ -263,6 +303,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     document.documentElement.dataset.theme = meta.id
     document.documentElement.classList.toggle('dark', meta.mode === 'dark')
   }, [state.theme])
+
+  useEffect(() => {
+    const { appName, workspaceName } = state.identity
+    document.title = `${appName} — ${workspaceName} workspace`
+    void setWindowTitle(appName)
+  }, [state.identity])
 
   const addIssue = useCallback((input: IssueInput) => {
     const status = input.status ?? 'todo'
@@ -376,6 +422,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'sidebar/toggle' })
   }, [])
 
+  const updateIdentity = useCallback((patch: Partial<Identity>) => {
+    dispatch({ type: 'identity/update', patch })
+  }, [])
+
   const resetData = useCallback(() => {
     dispatch({ type: 'state/reset' })
   }, [])
@@ -394,6 +444,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       toggleNotePin,
       addProject,
       updateProject,
+      updateIdentity,
       setTheme,
       toggleSidebar,
       resetData,
@@ -411,6 +462,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       toggleNotePin,
       addProject,
       updateProject,
+      updateIdentity,
       setTheme,
       toggleSidebar,
       resetData,
@@ -419,6 +471,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
 }
+
+//=====> App Hook <=====//
 
 export function useApp() {
   const context = useContext(AppContext)

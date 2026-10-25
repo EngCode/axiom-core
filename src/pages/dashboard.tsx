@@ -1,3 +1,9 @@
+/**======> Reference By Comment <======
+ * ===> 01 - Imports
+ * ===> 02 - Dashboard Metrics
+ * ===> 03 - Dashboard Page
+ */
+
 import { useState, type FormEvent } from 'react'
 import {
   ArrowRight,
@@ -15,7 +21,6 @@ import { Link, useNavigate } from 'react-router-dom'
 import { IssueRow } from '@/components/issue-row'
 import { ProjectDot } from '@/components/issue-bits'
 import { Button, Card, CardHeader, EmptyState, Progress } from '@/components/ui'
-import { WORKSPACE } from '@/lib/data'
 import { completionSeries, focusIssues, getStats, projectProgress, sortNotes } from '@/lib/derive'
 import { PROJECT_COLORS, STATUS_ORDER, STATUS_META } from '@/lib/meta'
 import { useApp } from '@/lib/store'
@@ -111,7 +116,7 @@ export default function DashboardPage() {
               {formatDate(localISODate(), 'long')}
             </p>
             <h1 className="mt-2 font-display text-[25px] leading-tight font-semibold tracking-[-0.03em] text-fg sm:text-[27px]">
-              {greeting()}, {WORKSPACE.owner}
+              {greeting()}, {state.identity.ownerName}
             </h1>
             <p className="mt-1.5 max-w-xl text-[13px] leading-6 text-fg-muted">{summary}</p>
           </div>
@@ -238,7 +243,7 @@ export default function DashboardPage() {
                       <div className="flex items-center gap-2">
                         <ProjectDot project={project} />
                         <span className="truncate text-[12px] text-fg">{project.name}</span>
-                        <span className="ml-auto shrink-0 text-[10px] text-fg-subtle tabular-nums">
+                        <span className="ms-auto shrink-0 text-[10px] text-fg-subtle tabular-nums">
                           {progress.done}/{progress.total}
                         </span>
                       </div>

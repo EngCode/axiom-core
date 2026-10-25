@@ -1,9 +1,9 @@
-# Orbit — product specification
+# Axiom Core — product specification
 
 **Status:** v0.1 (foundation) · **Owner:** Abdullah · **Last updated:** 2026-10-25
 
-> **Direction update — 2026-10-25.** Orbit is now **desktop-first**: a Tauri shell around a pure
-> Rust core (`orbit-core`) with SQLite, so it can live in the tray and feel like part of the OS.
+> **Direction update — 2026-10-25.** Axiom Core is now **desktop-first**: a Tauri shell around a pure
+> Rust core (`axiom-core`) with SQLite, so it can live in the tray and feel like part of the OS.
 > It also grows a **media Library** module (games, movies, series, anime and user-defined kinds)
 > whose first job is answering *"do I already have this?"*. See [LIBRARY.md](LIBRARY.md) for the
 > module design and the current delivery order.
@@ -14,7 +14,7 @@
 > Workspace persistence moved to SQLite (`load_state` / `save_state`, WAL, schema v1); the
 > Library tables and six editable kinds exist before their UI does.
 
-Orbit is a personal workspace for tasks, projects and notes. It should feel like Linear
+Axiom Core is a personal workspace for tasks, projects and notes. It should feel like Linear
 when you are executing and like Notion when you are thinking — fast, quiet, keyboard-first,
 and entirely yours.
 
@@ -31,7 +31,7 @@ One place to answer three questions, every morning:
 2. **What is moving?** → projects with visible progress.
 3. **What am I thinking about?** → notes that are easy to write and easy to find.
 
-Most personal tools fail by asking for structure before they return value. Orbit should be
+Most personal tools fail by asking for structure before they return value. Axiom Core should be
 useful on day one with ten tasks and no projects, and still coherent at a thousand tasks.
 
 ## 2. Principles
@@ -59,7 +59,7 @@ who wants a self-hosted personal Linear.
   scrollable content column, footer with shortcut hints.
 - Dark theme by default, light theme available; preference persists and is applied before first
   paint to avoid a flash.
-- Workspace identity ("Orbit · Abdullah · Personal workspace") is a placeholder constant.
+- Workspace identity ("Axiom Core · Abdullah · Personal workspace") is a placeholder constant.
 
 ### Dashboard (`/`)
 
@@ -105,14 +105,14 @@ who wants a self-hosted personal Linear.
 
 ### Persistence
 
-- Whole state is serialised to `localStorage` (`orbit.state.v1`) on every change.
+- Whole state is serialised to `localStorage` (`axiom.state.v1`) on every change.
 - Seed data is relative to today, so the dashboard always looks alive on a fresh load.
 - "Reset demo data" in the sidebar restores the seed after confirmation.
 
 ## 5. Information architecture
 
 ```
-Orbit
+Axiom Core
 ├── Dashboard        /                  overview + focus
 ├── Issues           /issues            all tasks, grouped by status
 │                    /issues?project=id project-scoped list
@@ -235,7 +235,7 @@ desynchronise.
 - **State:** single reducer in `src/lib/store.tsx`, exposed through `useApp()`. Mutations go
   through intent methods (`addIssue`, `updateIssue`, `toggleIssueDone`, `addNote`, …) so activity
   logging and timestamps stay consistent.
-- **Persistence:** `localStorage`, versioned (`orbit.state.v1`); a version mismatch falls back to
+- **Persistence:** `localStorage`, versioned (`axiom.state.v1`); a version mismatch falls back to
   seed data.
 - **UI state:** `src/lib/ui.tsx` holds the palette and issue-dialog state plus global shortcuts.
 - **Styling:** semantic Tailwind utilities (`bg-surface`, `text-fg-muted`, `border-line`) mapped
@@ -308,7 +308,7 @@ plan reflects them.
    v0.3?
 5. **Review ritual:** should the app generate a weekly review note automatically, or stay out of
    the way?
-6. **Naming:** "Orbit" is a placeholder. Keep it or rename before the first shared build?
+6. **Naming:** "Axiom Core" is a placeholder. Keep it or rename before the first shared build?
 
 ## 14. Decision log
 

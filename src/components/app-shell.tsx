@@ -1,11 +1,19 @@
+/**======> Reference By Comment <======
+ * ===> 01 - Imports
+ * ===> 02 - Shell Layout
+ */
+
 import { useEffect, useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
+
+import { useApp } from '@/lib/store'
 
 import { Kbd } from './ui'
 import { Sidebar } from './sidebar'
 import { Topbar } from './topbar'
 
 export function AppShell() {
+  const { state } = useApp()
   const location = useLocation()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
@@ -34,7 +42,7 @@ export function AppShell() {
           </div>
           <footer className="mx-auto flex w-full max-w-[1180px] items-center justify-between gap-4 px-4 pb-6 text-[11px] text-fg-subtle sm:px-6 lg:px-8">
             <span>
-              {new Date().getFullYear()} · Orbit is your personal workspace, stored in this browser
+              {new Date().getFullYear()} · {state.identity.appName} — {state.identity.workspaceName} workspace, stored locally
             </span>
             <span className="hidden items-center gap-1.5 sm:flex">
               <Kbd>C</Kbd> new issue <span className="text-fg-subtle/40">/</span>{' '}

@@ -1,4 +1,4 @@
-# Orbit Library — media module specification
+# Axiom Core Library — media module specification
 
 **Status:** draft · **Parent spec:** [SPEC.md](SPEC.md) · **Last updated:** 2026-10-25
 
@@ -140,7 +140,7 @@ the 4 TB drive and scan `E:\Shows`: 120 episodes attach to 9 existing series, 3 
 proposed.
 
 **What scanning is not:** not a player, not a download client, not a renamer, not a crawler of
-the internet, and not destructive. The only thing it writes is Orbit's own database.
+the internet, and not destructive. The only thing it writes is Axiom Core's own database.
 
 ### 6.1 External drives are the normal case
 
@@ -158,14 +158,14 @@ All media lives on USB drives that are usually unplugged. That shapes the model:
 - **Scanning respects USB.** Filenames first, no hashing by default, no container probing unless
   asked. The walk is sequential and cancellable, DB writes are batched, and unplugging mid-scan
   aborts that run without losing what was already indexed.
-- **The database never lives on a media drive.** SQLite sits in `%APPDATA%\Orbit`, so unplugging
+- **The database never lives on a media drive.** SQLite sits in `%APPDATA%\com.axiom.core`, so unplugging
   a drive cannot corrupt the library. The app never writes to media volumes.
 - **UI surfaces:** a *Volumes* screen (label, capacity, online, item count, last seen), *plug in X*
   hints on items, and a per-drive view of what is stored there.
 
 ### 6.2 From folder to library: detect → review → fetch
 
-The everyday flow is: point at a folder, confirm what Orbit found, and let it fetch the details.
+The everyday flow is: point at a folder, confirm what Axiom Core found, and let it fetch the details.
 
 1. **Add a folder** (Library → *Add folder*, or drag a folder onto the window). Say what it holds:
    a specific kind (*Movies*), or *Detect automatically*.
@@ -204,7 +204,7 @@ Providers: **TMDB** for movies/series/anime, **IGDB** for games. Metadata is fet
 then cached in the user profile so the app works offline and never re-queries on launch:
 
 ```
-%APPDATA%\Orbit\cache\
+%APPDATA%\com.axiom.core\cache\
 ├── metadata\tmdb\603.json       # provider payload
 ├── metadata\igdb\1029.json
 └── covers\<hash>.jpg            # resized thumbnails, not full art

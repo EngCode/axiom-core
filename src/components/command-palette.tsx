@@ -1,20 +1,29 @@
+/**======> Reference By Comment <======
+ * ===> 01 - Imports & Types
+ * ===> 02 - Palette Item Builders
+ * ===> 03 - Palette Component
+ */
+
 import { useEffect, useMemo, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import {
   BookOpen,
   CircleDot,
+  FileText,
   CornerDownLeft,
   FolderKanban,
   LayoutDashboard,
+  Library,
   NotebookPen,
   Palette,
+  Settings2,
   Plus,
   Search,
   SquarePen,
+  Wrench,
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
-import { DOCS } from '@/lib/docs'
 import { STATUS_META } from '@/lib/meta'
 import { nextTheme, themeMeta } from '@/lib/themes'
 import { useApp } from '@/lib/store'
@@ -38,7 +47,7 @@ const GROUP_ORDER: PaletteItem['group'][] = ['Pages', 'Actions', 'Issues', 'Note
 
 export function CommandPalette() {
   const { state, setTheme, addNote } = useApp()
-  const { paletteOpen, closePalette, openIssueDialog } = useUI()
+  const { paletteOpen, closePalette, openIssueDialog, openSettings } = useUI()
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
   const [active, setActive] = useState(0)
@@ -107,10 +116,37 @@ export function CommandPalette() {
         run: () => navigate('/notes'),
       },
       {
+        id: 'page-documents',
+        group: 'Pages',
+        title: 'Documents',
+        subtitle: 'Long-form workspace pages',
+        icon: <FileText className="size-3.5" />,
+        keywords: 'documents docs pages writing',
+        run: () => navigate('/documents'),
+      },
+      {
+        id: 'page-library',
+        group: 'Pages',
+        title: 'Library',
+        subtitle: 'Media you already own',
+        icon: <Library className="size-3.5" />,
+        keywords: 'library media games movies series anime books music',
+        run: () => navigate('/library'),
+      },
+      {
+        id: 'page-tools',
+        group: 'Pages',
+        title: 'Tools',
+        subtitle: 'Documentation, identity, appearance, data',
+        icon: <Wrench className="size-3.5" />,
+        keywords: 'tools settings documentation theme reset data',
+        run: () => navigate('/tools'),
+      },
+      {
         id: 'page-docs',
         group: 'Pages',
         title: 'Documentation',
-        subtitle: `${DOCS.length} documents`,
+        subtitle: 'Offline reference',
         icon: <BookOpen className="size-3.5" />,
         keywords: 'docs help reference spec pages features',
         run: () => navigate('/docs'),
@@ -138,6 +174,15 @@ export function CommandPalette() {
           const id = addNote()
           navigate(`/notes?note=${id}`)
         },
+      },
+      {
+        id: 'action-settings',
+        group: 'Actions',
+        title: 'Personalization',
+        subtitle: 'Rename the app, workspace and owner',
+        icon: <Settings2 className="size-3.5" />,
+        keywords: 'settings identity name rename workspace owner theme',
+        run: openSettings,
       },
       {
         id: 'action-theme',
@@ -273,7 +318,7 @@ export function CommandPalette() {
                         onMouseMove={() => setActive(index)}
                         onClick={() => runItem(item)}
                         className={cn(
-                          'flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors',
+                          'flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-start transition-colors',
                           isActive ? 'bg-surface-2' : 'hover:bg-surface-2/60',
                         )}
                       >
@@ -306,7 +351,7 @@ export function CommandPalette() {
             <Kbd>↵</Kbd>
             open
           </span>
-          <span className="ml-auto flex items-center gap-1">
+          <span className="ms-auto flex items-center gap-1">
             <Kbd>⌘K</Kbd>
             toggle
           </span>

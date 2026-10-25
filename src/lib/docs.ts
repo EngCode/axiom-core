@@ -1,3 +1,8 @@
+/**======> Reference By Comment <======
+ * ===> 01 - Types & Content Loading
+ * ===> 02 - Resolution Helpers
+ */
+
 const rawDocs = import.meta.glob('/docs/**/*.md', {
   query: '?raw',
   import: 'default',
@@ -36,6 +41,9 @@ const ORDER: string[] = [
   'pages/issues',
   'pages/projects',
   'pages/notes',
+  'pages/documents',
+  'pages/library',
+  'pages/tools',
   'features/command-palette',
   'features/issue-dialog',
   'features/quick-capture',
@@ -44,6 +52,7 @@ const ORDER: string[] = [
   'features/keyboard',
   'features/media-library',
   'features/in-app-docs',
+  'features/personalization',
   'resources/SPEC',
   'resources/LIBRARY',
   'resources/DESIGN',

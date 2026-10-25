@@ -1,3 +1,9 @@
+/**======> Reference By Comment <======
+ * ===> 01 - Imports & Icon Maps
+ * ===> 02 - Status & Priority Indicators
+ * ===> 03 - Chips & Pickers
+ */
+
 import { CalendarDays, Circle, CircleCheck, CircleDashed, CircleDot, Minus } from 'lucide-react'
 
 import { PRIORITY_META, PRIORITY_ORDER, PROJECT_COLORS, STATUS_META, STATUS_ORDER } from '@/lib/meta'

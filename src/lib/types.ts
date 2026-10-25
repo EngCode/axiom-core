@@ -1,6 +1,18 @@
+/**======> Reference By Comment <======
+ * ===> 01 - Domain Models
+ * ===> 02 - Application State
+ * ===> 03 - Input Contracts
+ */
+
 import type { ThemeId } from './themes'
 
 export type Theme = ThemeId
+
+export interface Identity {
+  appName: string
+  workspaceName: string
+  ownerName: string
+}
 
 export type Status = 'backlog' | 'todo' | 'in_progress' | 'done'
 
@@ -59,6 +71,7 @@ export interface ActivityEntry {
 
 export interface AppState {
   version: number
+  identity: Identity
   theme: Theme
   sidebarCollapsed: boolean
   projects: Project[]

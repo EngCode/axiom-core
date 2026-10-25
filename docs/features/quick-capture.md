@@ -4,7 +4,7 @@
 **Sources:** [`src-tauri/src/lib.rs`](../../src-tauri/src/lib.rs),
 [`src/pages/quick-capture.tsx`](../../src/pages/quick-capture.tsx)
 
-A frameless one-line window for getting a task out of your head without opening Orbit.
+A frameless one-line window for getting a task out of your head without opening Axiom Core.
 
 ## How it works
 
@@ -40,8 +40,8 @@ the new state, so a task captured while the app is open appears in Focus without
 
 ## Using it without the shortcut
 
-The tray menu exposes **Quick capture** with the same toggle behaviour, and **Open Orbit** for the
-main window. If the app is started with `ORBIT_START_HIDDEN=1`, only the tray is available until
+The tray menu exposes **Quick capture** with the same toggle behaviour, and **Open Axiom Core** for the
+main window. If the app is started with `AXIOM_START_HIDDEN=1`, only the tray is available until
 one of these actions.
 
 ## Known gaps

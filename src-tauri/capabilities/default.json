@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Permissions for Orbit's main and quick-capture windows",
+  "description": "Permissions for Axiom Core's main and quick-capture windows",
   "windows": ["main", "capture"],
   "permissions": ["core:default", "core:window:allow-close"]
 }

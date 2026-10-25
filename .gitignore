@@ -12,6 +12,7 @@ src-tauri/gen/
 # local tooling / preview artefacts
 .chrome-profile*/
 .webview2/
+.axiom-data/
 .orbit-data/
 dom-*.html
 shot-*.png
