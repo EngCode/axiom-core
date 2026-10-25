@@ -1,0 +1,63 @@
+import { ChevronRight, Menu, Plus, Search } from 'lucide-react'
+import { useLocation } from 'react-router-dom'
+
+import { WORKSPACE } from '@/lib/data'
+import { useUI } from '@/lib/ui'
+
+import { ThemePicker } from './theme-picker'
+import { Avatar, Button, IconButton, Kbd } from './ui'
+
+const PAGE_TITLES: Record<string, string> = {
+  '/': 'Dashboard',
+  '/issues': 'Issues',
+  '/projects': 'Projects',
+  '/notes': 'Notes',
+  '/docs': 'Documentation',
+}
+
+export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
+  const { openPalette, openIssueDialog } = useUI()
+  const location = useLocation()
+  const title = PAGE_TITLES[location.pathname] ?? 'Not found'
+
+  return (
+    <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-2 border-b border-line bg-surface/80 px-3 backdrop-blur-md sm:px-4">
+      <IconButton label="Open navigation" className="lg:hidden" onClick={onOpenMobileNav}>
+        <Menu className="size-4" />
+      </IconButton>
+
+      <div className="flex min-w-0 items-center gap-1.5 text-[12.5px]">
+        <span className="hidden text-fg-subtle sm:inline">{WORKSPACE.kind}</span>
+        <ChevronRight className="hidden size-3 shrink-0 text-fg-subtle/60 sm:inline" />
+        <span className="truncate font-medium text-fg">{title}</span>
+      </div>
+
+      <div className="ml-auto flex items-center gap-1.5">
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={openPalette}
+          className="hidden pr-1.5 text-fg-subtle sm:inline-flex"
+        >
+          <Search className="size-3.5" />
+          Search
+          <Kbd className="ml-2">⌘K</Kbd>
+        </Button>
+
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={() => openIssueDialog()}
+          title="New issue — press C"
+        >
+          <Plus className="size-3.5" />
+          <span className="hidden sm:inline">New issue</span>
+        </Button>
+
+        <ThemePicker className="hidden sm:block" />
+
+        <Avatar name={WORKSPACE.owner} size="md" className="ml-0.5" />
+      </div>
+    </header>
+  )
+}

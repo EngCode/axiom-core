@@ -1,0 +1,69 @@
+# Issues
+
+**Route:** `/issues` · **Scoped route:** `/issues?project=<id>` ·
+**Status:** shipped · **Source:** [`src/pages/issues.tsx`](../../src/pages/issues.tsx)
+
+The complete task list, grouped by status. This is the page where triage and editing happen.
+
+## Header
+
+- Without a project filter: eyebrow “Workspace”, title “Issues”, description with total and open
+  counts.
+- With `?project=<id>`: eyebrow `<KEY> · Project`, the project name as the title, and its
+  description. The page is otherwise identical.
+- Actions: *Clear filters* (only when a filter is active) and *New issue* (pre-fills the project).
+
+## Filters
+
+| Control | Behaviour |
+| --- | --- |
+| Status pills | All / Backlog / Todo / In progress / Done with live counts; clicking the active status clears it |
+| Text search | Matches title, issue key and labels, case-insensitive |
+| Project select | `all` or one project; written to the URL (`?project=`) so it is linkable |
+| Priority select | `all` or one priority |
+
+Counts are computed **after** the project, priority and text filters, so the pills describe what
+you are currently looking at. Filter state other than project lives in memory and resets on reload.
+
+## Groups
+
+- Fixed order: Backlog, Todo, In progress, Done.
+- Each group shows a status icon, label, count, a one-line hint and a `+` that creates a task
+  directly in that status (and current project).
+- Empty groups disappear; the page shows one empty state when nothing matches.
+- Done tasks keep strikethrough titles but remain editable.
+
+## Row anatomy
+
+| Element | Behaviour |
+| --- | --- |
+| Status circle | toggles done/todo without opening the dialog |
+| Key | monospace `WEB-4`, hidden below 640 px |
+| Title | truncates; clicking opens the issue dialog |
+| Labels | first two, hidden below 768 px |
+| Due chip | “Today”, “Tomorrow”, weekday, date, or `Nd overdue` (danger colours) |
+| Priority | bar indicator; tooltip carries the label |
+| Project | coloured dot + name on wide screens; “Personal” when no project |
+
+## Creating and editing
+
+- New issues receive a sequential key from the project prefix (`WEB-1`) or `TASK-1`.
+- The dialog is documented in [issue-dialog.md](../features/issue-dialog.md).
+- The status circle is the fastest path: one click completes; another restores to todo.
+
+## Empty states
+
+- No issues at all: “No issues yet” with a create action.
+- Filters match nothing: “No issues match those filters” with *Clear filters*.
+
+## Footer line
+
+Shows `Showing N issues` (and `of total` when filtered), plus a reminder that rows edit and
+circles complete.
+
+## Known gaps
+
+- No sorting (priority / due date), grouping switch, or manual order.
+- No bulk selection, multi-select or saved views.
+- Filter state is not persisted across reloads.
+- No sub-tasks or dependencies.

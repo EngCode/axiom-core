@@ -1,0 +1,61 @@
+# Orbit documentation
+
+Orbit is a personal workspace and media library for Windows: tasks, projects and notes in one
+keyboard-first interface, wrapped in a native Tauri shell with a local SQLite database.
+
+This folder explains **what exists**, **where it lives**, and **what is still planned**. Every
+page and feature has its own document; the product-level specs live in
+[resources](resources/SPEC.md).
+
+## Start here
+
+| Document | What it answers |
+| --- | --- |
+| [Project structure](project-structure.md) | Which folder or file owns which concern |
+| [Architecture](architecture.md) | The stack, data flow, persistence and desktop shell |
+| [Pages](pages/dashboard.md) | What each screen does and which features it contains |
+| [Features](features/command-palette.md) | Behaviour of each cross-cutting feature |
+| [Product spec](resources/SPEC.md) | Vision, scope, roadmap, open questions |
+| [Library spec](resources/LIBRARY.md) | Media module: kinds, copies, volumes, scanning |
+| [Design system](resources/DESIGN.md) | Tokens, themes, components, change recipes |
+
+## Pages
+
+| Route | Page | Document | Primary features |
+| --- | --- | --- | --- |
+| `/` | Dashboard | [dashboard.md](pages/dashboard.md) | greeting, stats, focus list, quick add, projects, week chart, recent notes, activity |
+| `/issues` | Issues | [issues.md](pages/issues.md) | status groups, filters, search, inline complete, edit dialog |
+| `/issues?project=<id>` | Project-scoped issues | [issues.md](pages/issues.md) | same list filtered to one project |
+| `/projects` | Projects | [projects.md](pages/projects.md) | progress cards, create, archive, restore, per-project task |
+| `/notes` | Notes | [notes.md](pages/notes.md) | note list, search, editor, tags, pin, autosave |
+| `/notes?note=<id>` | Note deep link | [notes.md](pages/notes.md) | opens a specific note |
+| *(desktop window)* | Quick capture | [quick-capture.md](features/quick-capture.md) | global hotkey, one-line capture |
+
+Unknown routes redirect to the dashboard.
+
+## Features
+
+| Feature | Status | Document | Main code |
+| --- | --- | --- | --- |
+| Command palette (`⌘K`) | shipped | [command-palette.md](features/command-palette.md) | `src/components/command-palette.tsx` |
+| Issue create/edit dialog | shipped | [issue-dialog.md](features/issue-dialog.md) | `src/components/issue-dialog.tsx` |
+| Quick capture (global hotkey) | shipped, minimal | [quick-capture.md](features/quick-capture.md) | `src-tauri/src/lib.rs`, `src/pages/quick-capture.tsx` |
+| Themes and design tokens | shipped | [themes.md](features/themes.md) | `src/index.css`, `src/lib/themes.ts` |
+| Persistence (SQLite + cache) | shipped | [persistence.md](features/persistence.md) | `src-tauri/src/data/`, `src/lib/db.ts` |
+| Keyboard model | shipped | [keyboard.md](features/keyboard.md) | `src/lib/ui.tsx`, components |
+| Media library | data layer only | [media-library.md](features/media-library.md) | `src-tauri/src/data/db.rs`, `src/lib/library-*.ts` |
+
+Status vocabulary used throughout the docs:
+
+- **shipped** — works in the current build.
+- **partial** — works, with known gaps listed in the document.
+- **planned** — designed, not implemented.
+- **exploration** — a mockup or idea only.
+
+## Reading order for new work
+
+1. [Architecture](architecture.md) — understand where state and effects live.
+2. The page document you are changing.
+3. The relevant feature documents.
+4. The [design system](resources/DESIGN.md) before changing any visual.
+5. The [product spec](resources/SPEC.md) and [library spec](resources/LIBRARY.md) before adding scope.

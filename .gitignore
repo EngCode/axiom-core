@@ -1,0 +1,25 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# build output
+dist/
+
+# rust / tauri
+src-tauri/target/
+src-tauri/gen/
+
+# local tooling / preview artefacts
+.chrome-profile*/
+.webview2/
+.orbit-data/
+dom-*.html
+shot-*.png
+.preview-server.py
+*.log
+
+# editor & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

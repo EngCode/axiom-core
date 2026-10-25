@@ -1,0 +1,7 @@
+packages:
+  - '.'
+
+# Windows-friendly defaults: the isolated symlink layout fails on some setups,
+# so packages are hoisted and copied instead of linked.
+nodeLinker: hoisted
+packageImportMethod: copy

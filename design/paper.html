@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Orbit — Paper direction</title>
+    <style>
+      :root {
+        --paper: #f4eee3;
+        --sheet: #fbf7ee;
+        --ink: #211d18;
+        --muted: #6b6154;
+        --faint: #94897a;
+        --rule: #ddd0ba;
+        --rust: #a5482c;
+        --rust-soft: #f0ddcf;
+        --serif: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+        --sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        --mono: 'Cascadia Mono', Consolas, monospace;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        background: var(--paper);
+        color: var(--ink);
+        font-family: var(--sans);
+        font-size: 13px;
+        -webkit-font-smoothing: antialiased;
+      }
+      .app { display: grid; grid-template-columns: 232px 1fr; min-height: 100vh; }
+
+      aside { border-right: 1px solid var(--rule); padding: 26px 22px; display: flex; flex-direction: column; gap: 26px; }
+      .brand { font-family: var(--serif); font-size: 24px; letter-spacing: -0.02em; }
+      .brand span { color: var(--rust); }
+      .workspace { margin-top: -18px; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--faint); }
+      nav { display: flex; flex-direction: column; gap: 2px; }
+      nav a { display: flex; align-items: center; justify-content: space-between; padding: 7px 9px; border-radius: 4px; color: var(--muted); text-decoration: none; font-size: 12.5px; }
+      nav a.active { background: var(--sheet); color: var(--ink); box-shadow: inset 0 0 0 1px var(--rule); }
+      nav a span { font-family: var(--mono); font-size: 10px; color: var(--faint); }
+      .section-label { font-size: 9.5px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--faint); margin-bottom: 8px; }
+      .project { display: flex; align-items: baseline; gap: 8px; padding: 5px 0; font-size: 12.5px; color: var(--muted); }
+      .project i { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+      .project small { margin-left: auto; font-family: var(--mono); font-size: 10px; color: var(--faint); }
+      .side-foot { margin-top: auto; font-size: 10px; color: var(--faint); border-top: 1px solid var(--rule); padding-top: 12px; display: flex; justify-content: space-between; }
+
+      main { padding: 42px 54px 38px; }
+      .hero { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; padding-bottom: 26px; border-bottom: 1px solid var(--rule); }
+      .eyebrow { font-size: 9.5px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--faint); }
+      h1 { font-family: var(--serif); font-weight: 400; font-size: 44px; letter-spacing: -0.025em; line-height: 1.05; margin-top: 10px; }
+      .lede { color: var(--muted); margin-top: 12px; font-size: 12.5px; }
+      .actions { display: flex; gap: 8px; padding-bottom: 4px; }
+      button { font-family: var(--sans); font-size: 12px; padding: 7px 13px; border-radius: 4px; border: 1px solid var(--rule); background: transparent; color: var(--ink); }
+      button.primary { background: var(--rust); border-color: var(--rust); color: var(--sheet); }
+
+      .stats { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid var(--rule); }
+      .stat { padding: 20px 24px 20px 0; border-right: 1px solid var(--rule); }
+      .stat:last-child { border-right: 0; }
+      .stat + .stat { padding-left: 24px; }
+      .stat .label { font-size: 9.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--faint); }
+      .stat .value { font-family: var(--serif); font-size: 34px; line-height: 1; margin-top: 8px; }
+      .stat .caption { font-size: 10.5px; color: var(--muted); margin-top: 6px; }
+      .stat .caption.danger { color: var(--rust); }
+
+      .columns { display: grid; grid-template-columns: 1fr 300px; gap: 44px; padding-top: 28px; }
+      .lower { border-top: 1px solid var(--rule); margin-top: 30px; padding-top: 24px; }
+      .section-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
+      h2 { font-family: var(--serif); font-weight: 400; font-size: 21px; letter-spacing: -0.01em; }
+      .section-head a { font-size: 11px; color: var(--muted); text-decoration: none; }
+      .addrow { display: flex; align-items: center; gap: 8px; padding: 9px 10px; border: 1px solid var(--rule); border-radius: 4px; color: var(--faint); font-size: 12px; background: var(--sheet); }
+      .addrow span { margin-left: auto; font-size: 10px; }
+
+      .tasks { list-style: none; margin-top: 6px; }
+      .tasks li { display: grid; grid-template-columns: 14px 52px 1fr auto auto; align-items: center; gap: 10px; padding: 10px 2px; border-bottom: 1px solid var(--rule); }
+      .tasks li:hover { background: var(--sheet); }
+      .dot { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--faint); }
+      .dot.progress { border-color: var(--rust); background: radial-gradient(circle, var(--rust) 0 2.5px, transparent 3px); }
+      .dot.done { background: var(--rust); border-color: var(--rust); }
+      .key { font-family: var(--mono); font-size: 9.5px; color: var(--faint); }
+      .title { font-size: 12.5px; }
+      .due { font-size: 10px; padding: 2px 6px; border: 1px solid var(--rule); border-radius: 3px; color: var(--muted); white-space: nowrap; }
+      .due.overdue { color: var(--rust); border-color: var(--rust-soft); background: var(--rust-soft); }
+      .pri { font-family: var(--mono); font-size: 9px; color: var(--rust); letter-spacing: 1px; }
+
+      .rail h2 { margin-bottom: 12px; }
+      .pblock { padding-bottom: 16px; border-bottom: 1px solid var(--rule); margin-bottom: 14px; }
+      .pblock .row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px; }
+      .pblock .row small { color: var(--faint); font-family: var(--mono); font-size: 9.5px; }
+      .bar { height: 3px; background: var(--rule); }
+      .bar i { display: block; height: 3px; background: var(--ink); }
+      .week { margin-top: 20px; }
+      .bars { display: flex; align-items: flex-end; gap: 7px; height: 64px; margin-top: 10px; }
+      .bars div { flex: 1; background: var(--rule); }
+      .bars div.on { background: var(--rust); }
+      .days { display: flex; gap: 7px; margin-top: 6px; }
+      .days span { flex: 1; text-align: center; font-size: 9px; color: var(--faint); font-family: var(--mono); }
+
+      .notecards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+      .note { border-top: 2px solid var(--ink); padding-top: 10px; }
+      .note h3 { font-family: var(--serif); font-weight: 400; font-size: 16px; line-height: 1.25; margin-bottom: 6px; }
+      .note p { font-size: 11.5px; color: var(--muted); line-height: 1.6; }
+      .note .meta { font-size: 9.5px; color: var(--faint); margin-top: 8px; font-family: var(--mono); }
+      .activity { font-size: 11.5px; color: var(--muted); }
+      .activity li { list-style: none; padding: 7px 0; border-bottom: 1px solid var(--rule); display: flex; gap: 8px; }
+      .activity li span { color: var(--faint); font-size: 9.5px; font-family: var(--mono); white-space: nowrap; }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <aside>
+        <div class="brand">Orbit<span>.</span></div>
+        <div class="workspace">Personal workspace · Abdullah</div>
+        <nav>
+          <a class="active">Dashboard <span>—</span></a>
+          <a>Issues <span>14</span></a>
+          <a>Projects <span>3</span></a>
+          <a>Notes <span>5</span></a>
+        </nav>
+        <div>
+          <div class="section-label">Projects</div>
+          <div class="project"><i style="background:#3f7d4e"></i>Website revamp<small>6</small></div>
+          <div class="project"><i style="background:#a5482c"></i>Q4 systems<small>4</small></div>
+          <div class="project"><i style="background:#6b6154"></i>Reading list<small>3</small></div>
+          <div class="project"><i style="background:#c2a35a"></i>Life admin<small>2</small></div>
+        </div>
+        <div class="side-foot"><span>Paper</span><span>Saved locally</span></div>
+      </aside>
+
+      <main>
+        <div class="hero">
+          <div>
+            <div class="eyebrow">Sunday, October 25</div>
+            <h1>Good evening, Abdullah.</h1>
+            <p class="lede">14 tasks open · 1 overdue · 1 due today. A quiet week ahead.</p>
+          </div>
+          <div class="actions">
+            <button class="primary">New issue</button>
+            <button>New note</button>
+          </div>
+        </div>
+
+        <div class="stats">
+          <div class="stat"><div class="label">Open tasks</div><div class="value">14</div><div class="caption">3 in progress</div></div>
+          <div class="stat"><div class="label">Due this week</div><div class="value">5</div><div class="caption danger">1 overdue</div></div>
+          <div class="stat"><div class="label">Completed · 7 days</div><div class="value">3</div><div class="caption">18% of everything done</div></div>
+          <div class="stat"><div class="label">Active projects</div><div class="value">3</div><div class="caption">5 notes written</div></div>
+        </div>
+
+        <div class="columns">
+          <section>
+            <div class="section-head"><h2>Focus</h2><a>All issues →</a></div>
+            <div class="addrow">+ Add a task for today…<span>due today</span></div>
+            <ul class="tasks">
+              <li><span class="dot"></span><span class="key">WEB-4</span><span class="title">Fix mobile nav layering bug</span><span class="due overdue">1d overdue</span><span class="pri">!!!</span></li>
+              <li><span class="dot progress"></span><span class="key">WEB-1</span><span class="title">Design the new homepage hero</span><span class="due">Today</span><span class="pri">!!</span></li>
+              <li><span class="dot"></span><span class="key">SYS-7</span><span class="title">Draft the weekly review template</span><span class="due">Tomorrow</span><span class="pri">!!</span></li>
+              <li><span class="dot"></span><span class="key">WEB-2</span><span class="title">Write the about page copy</span><span class="due">Tue</span><span class="pri">!</span></li>
+              <li><span class="dot"></span><span class="key">TASK-16</span><span class="title">Review October spending</span><span class="due">Wed</span><span class="pri">!</span></li>
+              <li><span class="dot progress"></span><span class="key">SYS-8</span><span class="title">Connect calendar to morning planning</span><span class="due">Thu</span><span class="pri">!</span></li>
+            </ul>
+          </section>
+
+          <aside class="rail">
+            <h2>Projects</h2>
+            <div class="pblock">
+              <div class="row"><span>Website revamp</span><small>1/6</small></div>
+              <div class="bar"><i style="width:17%"></i></div>
+            </div>
+            <div class="pblock">
+              <div class="row"><span>Q4 systems</span><small>1/4</small></div>
+              <div class="bar"><i style="width:25%"></i></div>
+            </div>
+            <div class="pblock">
+              <div class="row"><span>Reading list</span><small>0/3</small></div>
+              <div class="bar"><i style="width:0%"></i></div>
+            </div>
+            <div class="week">
+              <div class="section-label">This week</div>
+              <div class="bars">
+                <div style="height:4px"></div><div style="height:4px"></div><div class="on" style="height:34px"></div><div style="height:4px"></div><div class="on" style="height:34px"></div><div class="on" style="height:22px"></div><div style="height:4px"></div>
+              </div>
+              <div class="days"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>
+            </div>
+          </aside>
+        </div>
+
+        <div class="columns lower">
+          <section>
+            <div class="section-head"><h2>Recent notes</h2><a>All notes →</a></div>
+            <div class="notecards">
+              <div class="note"><h3>Weekly review — the template I keep coming back to</h3><p>Sunday, 30 minutes, no laptop except for this page. Five questions, one page.</p><div class="meta">13h ago · #systems</div></div>
+              <div class="note"><h3>Homepage directions</h3><p>Three directions worth prototyping. One paragraph, latest notes, email field.</p><div class="meta">1d ago · #design</div></div>
+              <div class="note"><h3>Small wins log</h3><p>Finally deleted the old domain. Wrote 400 words before opening email.</p><div class="meta">14h ago · #journal</div></div>
+            </div>
+          </section>
+          <section>
+            <div class="section-head"><h2>Activity</h2></div>
+            <ul class="activity">
+              <li>Edited “Weekly review” <span>13h</span></li>
+              <li>Moved WEB-1 to In progress <span>10h</span></li>
+              <li>Completed LIFE-15 <span>1d</span></li>
+              <li>Created WEB-4 <span>4d</span></li>
+            </ul>
+          </section>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

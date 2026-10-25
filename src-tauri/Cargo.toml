@@ -1,0 +1,31 @@
+[package]
+name = "orbit"
+version = "0.1.0"
+description = "Orbit — personal workspace and media library"
+authors = ["Abdullah"]
+edition = "2021"
+
+[features]
+custom-protocol = ["tauri/custom-protocol"]
+
+[profile.release]
+strip = true
+
+[lib]
+name = "orbit_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
+tauri-plugin-global-shortcut = "2"
+tauri-plugin-single-instance = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rusqlite = { version = "0.41.0", features = ["bundled"] }
+
+[profile.dev.package.libsqlite3-sys]
+# cl.exe chokes on /Z7 for the bundled SQLite C file in some environments.
+debug = false
