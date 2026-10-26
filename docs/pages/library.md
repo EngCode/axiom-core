@@ -5,14 +5,14 @@
 **Feature doc:** [media-library.md](../features/media-library.md) ·
 **Spec:** [LIBRARY.md](../resources/LIBRARY.md)
 
-![Library page](../preview-library.png)
+![Library page](../assets/screens/preview-library.png)
 
 The Library indexes media you already own so you never download it twice. The first milestone —
 folder scan, review and import — is implemented.
 
 ## Scan flow
 
-1. **Scan folder** opens the native folder picker (`rfd`).
+1. Choose **media type** and **depth**, then **Scan folder** to open the native folder picker (`rfd`).
 2. Rust walks the folder recursively (5,000-file budget), classifies by extension and returns
    candidates with `relPath`, size, kind and volume root.
 3. The page shows a review list; select all or individual files.

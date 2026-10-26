@@ -27,6 +27,8 @@ import { isTauri } from './tauri'
 import type {
   AppState,
   BackgroundSettings,
+  Attachment,
+  IssueExtras,
   DocumentRecord,
   Milestone,
   Identity,
@@ -56,6 +58,8 @@ type Action =
   | { type: 'project/delete'; id: string; options: ProjectDeleteOptions }
   | { type: 'project/reorder'; id: string; beforeId: string | null }
   | { type: 'issue/reorder'; id: string; beforeId: string | null; status?: Status }
+  | { type: 'issueExtras/update'; issueId: string; patch: Partial<IssueExtras> }
+  | { type: 'taskLink/set'; key: string; issueId: string | null }
   | { type: 'theme/set'; theme: Theme }
   | { type: 'sidebar/toggle' }
   | { type: 'state/reset' }
@@ -314,6 +318,27 @@ function reducer(state: AppState, action: Action): AppState {
             : milestone,
         ),
       }
+    case 'issueExtras/update': {
+      const current = state.issueExtras[action.issueId] ?? {
+        checklist: [],
+        attachments: [],
+        parentId: null,
+      }
+      return {
+        ...state,
+        issueExtras: {
+          ...state.issueExtras,
+          [action.issueId]: { ...current, ...action.patch },
+        },
+      }
+    }
+
+    case 'taskLink/set': {
+      const links = { ...state.taskLinks }
+      if (action.issueId) links[action.key] = action.issueId
+      else delete links[action.key]
+      return { ...state, taskLinks: links }
+    }
     case 'theme/set':
       return { ...state, theme: action.theme }
 
@@ -392,8 +417,16 @@ function loadState(fresh = false): AppState {
 
 interface AppContextValue {
   state: AppState
-  addIssue: (input: IssueInput) => void
+  addIssue: (input: IssueInput) => string
   updateIssue: (id: string, patch: Partial<Issue>) => void
+  updateIssueExtras: (issueId: string, patch: Partial<IssueExtras>) => void
+  addChecklistItem: (issueId: string, text: string) => void
+  toggleChecklistItem: (issueId: string, itemId: string) => void
+  removeChecklistItem: (issueId: string, itemId: string) => void
+  addAttachment: (issueId: string, attachment: Attachment) => void
+  removeAttachment: (issueId: string, attachmentId: string) => void
+  addSubtask: (parentId: string, title: string) => string
+  linkTask: (key: string, issueId: string | null) => void
   deleteIssue: (id: string) => void
   toggleIssueDone: (id: string) => void
   setIssueStatus: (id: string, status: Status) => void
@@ -517,10 +550,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const addIssue = useCallback((input: IssueInput) => {
     const status = input.status ?? 'todo'
     const now = new Date().toISOString()
+    const id = uid()
     dispatch({
       type: 'issue/add',
       issue: {
-        id: uid(),
+        id,
         key: '',
         title: input.title.trim(),
         description: input.description?.trim() ?? '',
@@ -534,8 +568,93 @@ export function AppProvider({ children }: { children: ReactNode }) {
         completedAt: status === 'done' ? now : null,
       },
     })
+    return id
   }, [])
 
+  const updateIssueExtras = useCallback((issueId: string, patch: Partial<IssueExtras>) => {
+    dispatch({ type: 'issueExtras/update', issueId, patch })
+  }, [])
+
+  const addChecklistItem = useCallback(
+    (issueId: string, text: string) => {
+      const value = text.trim()
+      if (!value) return
+      const current = state.issueExtras[issueId]?.checklist ?? []
+      dispatch({
+        type: 'issueExtras/update',
+        issueId,
+        patch: { checklist: [...current, { id: uid(), text: value, done: false }] },
+      })
+    },
+    [state.issueExtras],
+  )
+
+  const toggleChecklistItem = useCallback(
+    (issueId: string, itemId: string) => {
+      const current = state.issueExtras[issueId]?.checklist ?? []
+      dispatch({
+        type: 'issueExtras/update',
+        issueId,
+        patch: {
+          checklist: current.map((item) =>
+            item.id === itemId ? { ...item, done: !item.done } : item,
+          ),
+        },
+      })
+    },
+    [state.issueExtras],
+  )
+
+  const removeChecklistItem = useCallback(
+    (issueId: string, itemId: string) => {
+      const current = state.issueExtras[issueId]?.checklist ?? []
+      dispatch({
+        type: 'issueExtras/update',
+        issueId,
+        patch: { checklist: current.filter((item) => item.id !== itemId) },
+      })
+    },
+    [state.issueExtras],
+  )
+
+  const addAttachment = useCallback(
+    (issueId: string, attachment: Attachment) => {
+      const current = state.issueExtras[issueId]?.attachments ?? []
+      dispatch({
+        type: 'issueExtras/update',
+        issueId,
+        patch: { attachments: [...current, attachment] },
+      })
+    },
+    [state.issueExtras],
+  )
+
+  const removeAttachment = useCallback(
+    (issueId: string, attachmentId: string) => {
+      const current = state.issueExtras[issueId]?.attachments ?? []
+      dispatch({
+        type: 'issueExtras/update',
+        issueId,
+        patch: { attachments: current.filter((item) => item.id !== attachmentId) },
+      })
+    },
+    [state.issueExtras],
+  )
+
+  const addSubtask = useCallback(
+    (parentId: string, title: string) => {
+      const parent = state.issues.find((issue) => issue.id === parentId)
+      if (!parent) return ''
+      const id = addIssue({ title, projectId: parent.projectId, status: 'todo' })
+      dispatch({ type: 'issueExtras/update', issueId: id, patch: { parentId } })
+      return id
+    },
+    [addIssue, state.issues],
+  )
+
+  const linkTask = useCallback((key: string, issueId: string | null) => {
+    dispatch({ type: 'taskLink/set', key, issueId })
+  }, [])
   const updateIssue = useCallback((id: string, patch: Partial<Issue>) => {
     dispatch({ type: 'issue/update', id, patch })
   }, [])
@@ -724,6 +843,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     () => ({
       state,
       addIssue,
+      updateIssueExtras,
+      addChecklistItem,
+      toggleChecklistItem,
+      removeChecklistItem,
+      addAttachment,
+      removeAttachment,
+      addSubtask,
+      linkTask,
       updateIssue,
       deleteIssue,
       toggleIssueDone,
@@ -755,6 +882,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [
       state,
       addIssue,
+      updateIssueExtras,
+      addChecklistItem,
+      toggleChecklistItem,
+      removeChecklistItem,
+      addAttachment,
+      removeAttachment,
+      addSubtask,
+      linkTask,
       updateIssue,
       deleteIssue,
       toggleIssueDone,

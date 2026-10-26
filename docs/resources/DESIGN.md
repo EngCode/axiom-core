@@ -138,6 +138,6 @@ Rules of thumb:
 ## 5. Explorations
 
 `design/paper.html` and `design/terminal.html` are static mockups of two directions. They exist to
-compare density, type and colour; the rendered images live in `docs/style-paper.png` and
-`docs/style-terminal.png`. Both directions have since become themes: **Paper** borrows the palette
+compare density, type and colour; the rendered images live in `docs/assets/styles/style-paper.png` and
+`docs/assets/styles/style-terminal.png`. Both directions have since become themes: **Paper** borrows the palette
 and serif display, **Terminal** turns the monospace, phosphor and square-edge language into tokens.

@@ -9,7 +9,7 @@
 //=====> Imports & Constants <=====//
 
 import { useEffect, useState, type FormEvent } from 'react'
-import { Check, Database, RotateCcw, Settings2, Upload } from 'lucide-react'
+import { BookOpen, Check, Database, RotateCcw, Settings2, Upload } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 
 import {
@@ -49,7 +49,7 @@ async function resizeBackgroundImage(file: File): Promise<string> {
 }
 //=====> Settings Page <=====//
 
-export default function SettingsPage() {
+export default function UserPage() {
   //===> Read State & Actions <===//
   const { state, setTheme, updateIdentity, updateBackground, updatePageBackground, resetData } = useApp()
 
@@ -91,8 +91,8 @@ export default function SettingsPage() {
     <div className="animate-fade-in space-y-4">
       <PageHeader
         eyebrow="Personal"
-        title="Settings"
-        description="Appearance, identity and local data. Everything here is stored with your workspace."
+        title="User"
+        description="Your profile, appearance and local workspace. Private by default."
       />
 
       {/*=====> Appearance Section <=====*/}
@@ -352,9 +352,21 @@ export default function SettingsPage() {
         </div>
       </Card>
 
-      <p className="px-1 text-[10.5px] text-fg-subtle">
-        Looking for the product docs? Open <Link to="/docs" className="text-accent underline decoration-accent/30 underline-offset-2">Documentation</Link>.
-      </p>
+      <Card>
+        <CardHeader title="Help" hint="offline" />
+        <div className="flex flex-col gap-2 px-4 pb-4 text-[12px] text-fg-muted sm:flex-row sm:items-center sm:justify-between">
+          <span className="flex items-start gap-2">
+            <BookOpen className="mt-0.5 size-3.5 shrink-0" />
+            Pages, features and specs ship with the app and read offline.
+          </span>
+          <Link
+            to="/docs"
+            className="inline-flex items-center gap-1.5 text-[11.5px] font-medium text-accent underline decoration-accent/30 underline-offset-2"
+          >
+            Open documentation
+          </Link>
+        </div>
+      </Card>
     </div>
   )
 }

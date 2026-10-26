@@ -7,7 +7,7 @@
 The project detail page is the project's home rather than a filtered issue list. It answers: what
 is this, how far along is it, what is open, and what is next?
 
-![Project detail](../preview-project-detail.png)
+![Project detail](../assets/screens/preview-project-detail.png)
 
 ## Header
 
@@ -38,11 +38,11 @@ Tabs are links (`?tab=issues`) so they are shareable and survive refresh.
 - Issue rows here use the same `IssueList`/`IssueRow` as the Issues screen: group add buttons, drag`n  handles, click to edit, circle to complete, right-click or `⋯` for actions.
 - The page is read-only for project fields today; editing the project itself is a later dialog.
 
-![Project milestones](../preview-milestones.png)
+![Project milestones](../assets/screens/preview-milestones.png)
 
-![Shared issue list in project detail](../preview-project-issues.png)
+![Shared issue list in project detail](../assets/screens/preview-project-issues.png)
 
-![Issue context menu at the right window edge](../preview-context-menu.png)
+![Issue context menu at the right window edge](../assets/screens/preview-context-menu.png)
 
 ## Code map
 

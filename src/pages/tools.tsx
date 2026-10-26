@@ -1,38 +1,45 @@
 /**======> Reference By Comment <======
- * ===> 01 - Imports & Constants
- * ===> 02 - Tools Page
+ * ===> 01 - Imports & Helpers
+ * ===> 02 - Tools Catalog
  */
 
-//=====> Imports & Constants <=====//
+//=====> Imports & Helpers <=====//
 
-import { BookOpen, Database, RotateCcw, Settings2 } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { ArrowUpRight, Search, Sparkles } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
-import { Button, Card, CardHeader, PageHeader } from '@/components/ui'
-import { ThemePicker } from '@/components/theme-picker'
-import { useApp } from '@/lib/store'
-import { themeMeta } from '@/lib/themes'
+import { Card, EmptyState, Input, PageHeader } from '@/components/ui'
+import { TOOLS, TOOL_CATEGORIES, categoryLabel, type ToolCategoryId } from '@/lib/tools'
+import { cn } from '@/lib/utils'
 
-//=====> Tools Page <=====//
+type Filter = 'all' | ToolCategoryId
+
+//=====> Tools Catalog <=====//
 
 export default function ToolsPage() {
-  //===> Read App State & UI Actions <===//
-  const { state, resetData } = useApp()
-
-  //===> Derive Display Values <===//
-  const theme = themeMeta(state.theme)
-  const identity = state.identity
-
-  //===> Handle Destructive Reset <===//
-  function handleReset() {
-    //===> Guard Clause: Confirm Intent <===//
-    if (!window.confirm('Reset the workspace to the demo data? Every change, including identity, is lost.')) {
-      return
+  //===> Catalog State <===//
+  const [query, setQuery] = useState('')
+  const [filter, setFilter] = useState<Filter>('all')
+  const [recent] = useState<string[]>(() => {
+    try {
+      return JSON.parse(window.localStorage.getItem('axiom.tools.recent') ?? '[]') as string[]
+    } catch {
+      return []
     }
+  })
 
-    //===> Reset State <===//
-    resetData()
-  }
+  //===> Filter Tools <===//
+  const visible = useMemo(() => {
+    const needle = query.trim().toLowerCase()
+    return TOOLS.filter((tool) => {
+      if (filter !== 'all' && tool.category !== filter) return false
+      if (!needle) return true
+      return `${tool.name} ${tool.description} ${tool.keywords}`.toLowerCase().includes(needle)
+    })
+  }, [filter, query])
+
+  const recentTools = TOOLS.filter((tool) => recent.includes(tool.id))
 
   //===> Render Page <===//
   return (
@@ -40,79 +47,117 @@ export default function ToolsPage() {
       <PageHeader
         eyebrow="Personal"
         title="Tools"
-        description="App-level controls that do not belong to a single workspace area."
+        description="Local utilities for design and development. Every tool runs in this window; nothing is uploaded."
       />
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        {/*=====> Documentation <=====*/}
+      <Card className="flex flex-col gap-2 p-2.5 sm:flex-row sm:items-center">
+        <div className="relative min-w-0 flex-1">
+          <Search className="pointer-events-none absolute top-1/2 start-2.5 size-3.5 -translate-y-1/2 text-fg-subtle" />
+          <Input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search tools…"
+            aria-label="Search tools"
+            className="h-8 ps-8 text-[12px]"
+          />
+        </div>
+        <div className="flex flex-wrap items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setFilter('all')}
+            aria-pressed={filter === 'all'}
+            className={cn(
+              'rounded-control border px-2 py-1 text-[10.5px] transition-colors',
+              filter === 'all'
+                ? 'border-accent/40 bg-accent-soft/40 text-fg'
+                : 'border-line text-fg-subtle hover:border-line-strong hover:text-fg',
+            )}
+          >
+            All
+            <span className="ms-1 text-fg-subtle">{TOOLS.length}</span>
+          </button>
+          {TOOL_CATEGORIES.map((category) => {
+            const count = TOOLS.filter((tool) => tool.category === category.id).length
+            return (
+              <button
+                key={category.id}
+                type="button"
+                onClick={() => setFilter(category.id)}
+                aria-pressed={filter === category.id}
+                className={cn(
+                  'rounded-control border px-2 py-1 text-[10.5px] transition-colors',
+                  filter === category.id
+                    ? 'border-accent/40 bg-accent-soft/40 text-fg'
+                    : 'border-line text-fg-subtle hover:border-line-strong hover:text-fg',
+                )}
+              >
+                {category.label}
+                <span className="ms-1 text-fg-subtle">{count}</span>
+              </button>
+            )
+          })}
+        </div>
+      </Card>
+
+      {recentTools.length > 0 && !query.trim() && filter === 'all' ? (
+        <section className="space-y-2">
+          <h2 className="px-1 text-[10px] font-medium tracking-[0.14em] text-fg-subtle uppercase">
+            Recent
+          </h2>
+          <div className="flex flex-wrap gap-1.5">
+            {recentTools.slice(0, 4).map((tool) => (
+              <Link
+                key={tool.id}
+                to={`/tools/${tool.id}`}
+                className="inline-flex items-center gap-1.5 rounded-control border border-line bg-surface px-2 py-1 text-[11px] text-fg-muted transition-colors hover:border-line-strong hover:text-fg"
+              >
+                <tool.icon className="size-3" />
+                {tool.name}
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {visible.length === 0 ? (
         <Card>
-          <CardHeader title="Documentation" hint="pages · features · specs" />
-          <div className="px-4 pb-4">
-            <p className="text-[12.5px] leading-5 text-fg-muted">
-              Every page, feature and specification ships with the app and reads offline.
-            </p>
+          <EmptyState
+            icon={<Search className="size-4" />}
+            title="No tools match"
+            description="Try a different search or category."
+          />
+        </Card>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {visible.map((tool) => (
             <Link
-              to="/docs"
-              className="mt-3 inline-flex items-center gap-1.5 text-[12px] font-medium text-accent underline decoration-accent/30 underline-offset-2 hover:decoration-accent"
+              key={tool.id}
+              to={`/tools/${tool.id}`}
+              className="group flex flex-col rounded-card border border-line bg-surface p-4 transition-[transform,border-color,box-shadow] duration-150 hover:-translate-y-0.5 hover:border-line-strong hover:shadow-lg hover:shadow-black/20"
             >
-              <BookOpen className="size-3.5" />
-              Open documentation
+              <div className="flex items-start gap-3">
+                <span className="grid size-9 shrink-0 place-items-center rounded-control border border-line bg-surface-2 text-fg-muted transition-colors group-hover:text-accent">
+                  <tool.icon className="size-4" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13px] font-medium text-fg">{tool.name}</p>
+                  <p className="mt-0.5 text-[10px] tracking-[0.1em] text-fg-subtle uppercase">
+                    {categoryLabel(tool.category)}
+                  </p>
+                </div>
+                <ArrowUpRight className="size-3.5 shrink-0 text-fg-subtle transition-transform group-hover:-translate-y-0.5 group-hover:text-fg rtl:-scale-x-100" />
+              </div>
+              <p className="mt-3 text-[11.5px] leading-5 text-fg-muted">{tool.description}</p>
             </Link>
-          </div>
-        </Card>
+          ))}
+        </div>
+      )}
 
-        {/*=====> Personalization <=====*/}
-        <Card>
-          <CardHeader title="Settings" hint={`${identity.ownerName} · ${identity.workspaceName}`} />
-          <div className="px-4 pb-4">
-            <p className="text-[12.5px] leading-5 text-fg-muted">
-              Rename <span className="text-fg">{identity.appName}</span>, the workspace and the owner. Changes apply to
-              the whole shell immediately.
-            </p>
-            <Link to="/settings" className="mt-3 inline-flex h-8 items-center gap-1.5 rounded-control border border-line bg-surface-2 px-2.5 text-[12.5px] font-medium text-fg transition-colors hover:border-line-strong hover:bg-surface-3">
-              <Settings2 className="size-3.5" />
-              Open settings
-            </Link>
-          </div>
-        </Card>
-
-        {/*=====> Appearance <=====*/}
-        <Card>
-          <CardHeader title="Appearance" hint={theme.name} />
-          <div className="px-4 pb-4">
-            <p className="text-[12.5px] leading-5 text-fg-muted">
-              Themes are token sets: colours, radii and display type change together.
-            </p>
-            <div className="mt-3">
-              <ThemePicker />
-            </div>
-          </div>
-        </Card>
-
-        {/*=====> Workspace Data <=====*/}
-        <Card>
-          <CardHeader title="Workspace data" hint="local SQLite · WAL" />
-          <div className="px-4 pb-4">
-            <p className="text-[12.5px] leading-5 text-fg-muted">
-              Restore the demo workspace. This clears tasks, notes, projects and identity, but never touches media
-              drives.
-            </p>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="mt-3 text-danger hover:bg-danger/10 hover:text-danger"
-              onClick={handleReset}
-            >
-              <RotateCcw className="size-3.5" />
-              Reset demo data
-            </Button>
-            <p className="mt-3 flex items-center gap-1.5 text-[10.5px] text-fg-subtle">
-              <Database className="size-3" />
-              Stored locally, never uploaded.
-            </p>
-          </div>
-        </Card>
-      </div>
+      <Card className="flex items-start gap-2 px-3 py-2.5 text-[10.5px] leading-4 text-fg-subtle">
+        <Sparkles className="mt-0.5 size-3.5 shrink-0" />
+        Each tool has its own route, so the catalog can grow without turning this page into one long
+        form. More image, colour and generator tools will land in the same structure.
+      </Card>
     </div>
   )
 }

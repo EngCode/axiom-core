@@ -33,6 +33,31 @@ pub struct Milestone {
     pub created_at: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ChecklistItem {
+    pub id: String,
+    pub text: String,
+    pub done: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Attachment {
+    pub id: String,
+    pub name: String,
+    pub size: u64,
+    pub path: String,
+    pub created_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct IssueExtras {
+    pub checklist: Vec<ChecklistItem>,
+    pub attachments: Vec<Attachment>,
+    pub parent_id: Option<String>,
+}
 /// A snapshot of the workspace exactly as the frontend holds it.
 /// Field names are camelCase so the JSON crosses the Tauri boundary unchanged.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -52,6 +77,10 @@ pub struct AppState {
     pub documents: Vec<DocumentRecord>,
     #[serde(default)]
     pub milestones: Vec<Milestone>,
+    #[serde(default)]
+    pub issue_extras: HashMap<String, IssueExtras>,
+    #[serde(default)]
+    pub task_links: HashMap<String, String>,
     pub activity: Vec<ActivityEntry>,
     #[serde(default)]
     pub counters: Counters,

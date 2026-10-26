@@ -3,7 +3,7 @@
 **Status:** shipped · **Entry points:** **Settings → Profile** — sidebar footer, top-bar avatar,
 `⌘K` → **Settings**, or Tools → Settings ·
 **Sources:** [`src/lib/identity.ts`](../../src/lib/identity.ts),
-[`src/pages/settings.tsx`](../../src/pages/settings.tsx),
+[`src/pages/user.tsx`](../../src/pages/user.tsx),
 [`src/lib/store.tsx`](../../src/lib/store.tsx) ·
 **See also:** [settings.md](../pages/settings.md)
 

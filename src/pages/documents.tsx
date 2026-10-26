@@ -21,7 +21,7 @@ import {
 import { Link, useSearchParams } from 'react-router-dom'
 
 import { DocumentList } from '@/components/document-list'
-import { Markdown } from '@/components/markdown'
+import { RichContent, RichTextEditor } from '@/lib/rich-text'
 import { Button, Card, IconButton, Input, PageHeader } from '@/components/ui'
 import { sortNotes } from '@/lib/derive'
 import { useApp } from '@/lib/store'
@@ -38,7 +38,7 @@ function DocumentEditor({
   onDeleted: () => void
 }) {
   //===> Read & Mutate <===//
-  const { state, updateDocument, deleteDocument, toggleDocumentPin } = useApp()
+  const { state, updateDocument, deleteDocument, toggleDocumentPin, linkTask } = useApp()
   const [preview, setPreview] = useState(false)
 
   //===> Derive Project <===//
@@ -90,7 +90,19 @@ function DocumentEditor({
               </option>
             ))}
           </select>
-          <span>Edited {formatRelative(document.updatedAt)}</span>
+          <select
+            value={state.taskLinks[`doc:${document.id}`] ?? ''}
+            onChange={(event) => linkTask(`doc:${document.id}`, event.target.value || null)}
+            aria-label="Linked task"
+            className="h-7 max-w-[200px] rounded-control border border-line bg-surface-2 px-1.5 text-[10.5px] text-fg-muted outline-none"
+          >
+            <option value="">No task</option>
+            {state.issues.map((issue) => (
+              <option key={issue.id} value={issue.id}>
+                {issue.key} · {issue.title}
+              </option>
+            ))}
+          </select>          <span>Edited {formatRelative(document.updatedAt)}</span>
           <div className="ms-auto flex items-center gap-0.5">
             <IconButton
               label={document.pinned ? 'Unpin document' : 'Pin document'}
@@ -144,17 +156,19 @@ function DocumentEditor({
       {preview ? (
         <div className="min-h-0 flex-1 overflow-y-auto p-4">
           {document.content.trim() ? (
-            <Markdown content={document.content} docSlug="documents" />
+            <RichContent content={document.content} />
           ) : (
             <p className="text-[12px] text-fg-subtle">Nothing written yet.</p>
           )}
         </div>
       ) : (
-        <textarea
+        <RichTextEditor
+          key={document.id}
           value={document.content}
-          onChange={(event) => updateDocument(document.id, { content: event.target.value })}
-          placeholder="Start writing… Markdown is supported."
-          className="min-h-[420px] flex-1 resize-none bg-transparent p-4 text-[13px] leading-6 text-fg outline-none placeholder:text-fg-subtle"
+          onChange={(content) => updateDocument(document.id, { content })}
+          placeholder="Start writing…"
+          className="m-3 flex-1 border-0 bg-transparent"
+          minHeight={420}
         />
       )}
     </Card>

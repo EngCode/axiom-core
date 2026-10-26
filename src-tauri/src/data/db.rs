@@ -321,6 +321,12 @@ pub fn load_state(connection: &Connection) -> Result<Option<AppState>> {
         })?
         .collect::<Result<Vec<_>>>()?;
 
+    let issue_extras = meta_value(connection, "issueExtras")?
+        .and_then(|value| serde_json::from_str(&value).ok())
+        .unwrap_or_default();
+    let task_links = meta_value(connection, "taskLinks")?
+        .and_then(|value| serde_json::from_str(&value).ok())
+        .unwrap_or_default();
     let documents = meta_value(connection, "documents")?
         .and_then(|value| serde_json::from_str(&value).ok())
         .unwrap_or_default();
@@ -359,6 +365,8 @@ pub fn load_state(connection: &Connection) -> Result<Option<AppState>> {
         notes,
         documents,
         milestones,
+        issue_extras,
+        task_links,
         activity,
         counters: Counters {
             issue: issue_counter,
@@ -458,6 +466,17 @@ pub fn save_state(connection: &mut Connection, state: &AppState) -> Result<()> {
         &transaction,
         "milestones",
         &serde_json::to_string(&state.milestones).unwrap_or_else(|_| "[]".to_string()),
+    )?;
+
+    set_meta(
+        &transaction,
+        "issueExtras",
+        &serde_json::to_string(&state.issue_extras).unwrap_or_else(|_| "{}".to_string()),
+    )?;
+    set_meta(
+        &transaction,
+        "taskLinks",
+        &serde_json::to_string(&state.task_links).unwrap_or_else(|_| "{}".to_string()),
     )?;
 
     set_meta(&transaction, "theme", &state.theme)?;

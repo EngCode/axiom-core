@@ -26,7 +26,8 @@ personal-manager/
 │   │   ├── documents.tsx      /documents (planned feature shell)
 │   │   ├── library.tsx        /library (data-layer status surface)
 │   │   ├── tools.tsx          /tools (docs, identity, appearance, data)
-│   │   ├── settings.tsx       /settings (appearance, profile, data)
+│   │   ├── user.tsx           /user (profile, appearance, help, data)
+│   │   ├── tools.tsx          /tools image utilities
 │   │   └── docs.tsx           /docs reference viewer
 │   │
 │   ├── components/            shell, primitives and domain components
@@ -56,6 +57,10 @@ personal-manager/
 │       ├── ui.tsx             overlay state and global shortcuts
 │       ├── docs.ts            markdown library, sections, link resolution
 │       ├── actions.ts        typed project/issue action contract
+│       ├── tools.ts          tool registry and categories
+│       ├── rich-text.tsx     shared rich editor and sanitizer
+│       ├── attachments.ts    native attachment bridge
+│       ├── library-scan.ts   typed scan client
 │       ├── use-pointer-sort.ts pointer-driven sorting (no HTML5 drag)
 │       ├── core-api.ts       typed client for the Rust core API
 │       ├── appearance.ts      background defaults and normalization
@@ -79,7 +84,9 @@ personal-manager/
 │           └── db.rs          schema, migrations, queries, writes
 │
 ├── docs/                      documentation (this folder)
-│   ├── README.md              index
+│   ├── assets/
+│   │   ├── screens/          feature screenshots
+│   │   └── styles/           design explorations│   ├── README.md              index
 │   ├── project-structure.md   this file
 │   ├── architecture.md        stack and data flow
 │   ├── pages/                 one document per screen

@@ -1,194 +1,134 @@
-# Axiom Core — a personal workspace
+# Axiom Core
 
-A personal Linear/Notion hybrid: tasks, projects and notes in one quiet, keyboard-first
-interface. Local-only, no account, no backend — your data lives in the browser.
+**A private, local-first workspace for independent work.**
 
-![Dashboard](docs/preview-dashboard.png)
+Axiom Core is a desktop app for freelancers and individuals who need one place for projects,
+tasks, notes, documents and a personal media library — without an account, a subscription or a
+browser tab. Your work lives in SQLite on your machine.
 
-> **Status:** v0.1 foundation. The dashboard, issue tracking, projects, notes, command palette
-> and local persistence are working. The next steps are planned in [SPEC.md](docs/resources/SPEC.md).
+![Axiom Core dashboard](docs/assets/screens/preview-dashboard.png)
 
-## What is here
+> **Status:** personal beta. Projects, tasks, documents, notes, milestones, themes, settings and a
+> first Library scan/import flow are working. Rich task content and the utility tools are the next
+> build.
 
-- **Dashboard** — time-aware greeting, open/overdue/completed stats, an urgency-ranked focus
-  list with inline quick-add, project progress, a 7-day completion chart and an activity feed.
-- **Issues** — grouped by status, filterable by project / priority / text, editable in a dialog,
-  with Linear-style keys (`WEB-4`), priorities and due dates.
-- **Projects** — colour-coded cards with progress, target dates, creation and archiving.
-- **Notes** — two-pane editor with instant autosave, tags, pinning and an optional project.
-- **Command palette** — `⌘K` / `Ctrl+K` to jump anywhere, search issues and notes, or create.
-- **Themes** — dark by default, light on demand; the choice persists.
-- **Seed data** — a realistic demo workspace, resettable from the sidebar.
+## Why it exists
+
+Most tools are built for teams and rented by the seat. A freelancer needs fewer features, used
+deeply:
+
+- **One workspace, not five tabs.** Client projects, task lists, notes, briefs and the media you
+  already own sit beside each other.
+- **Local first.** No account, no sync service, no telemetry. Close the app and nothing leaves.
+- **Made for a desktop.** Tray-first, global quick capture, real windows and a keyboard-first
+  command palette.
+- **Yours to change.** Themes, identity, backgrounds and data live in the repo and on disk.
+
+## What is inside
+
+| Area | What it does |
+| --- | --- |
+| **Dashboard** | Greeting, open/overdue stats, focus list, quick add, project progress, weekly chart, activity |
+| **Projects** | Colour-coded cards, target dates, progress, detail workspace, archive/restore, delete with item choices |
+| **Tasks** | Checklists, subtasks, attachments, rich descriptions, status groups, drag reorder, context menus |
+| **Milestones** | Due dates, status, linked tasks and completion rollup inside a project |
+| **Documents** | Rich-text editor, project ownership, task links, pin, search, deep links |
+| **Notes** | Two-pane rich-text notes, tags, pinning, project and task links |
+| **Library** | Folder scan with media type + depth, review, import, volume-relative copies, item grid |
+| **User / themes** | Profile, Classic/Paper/Terminal, local or per-page backgrounds, help, data reset |\n| **Tools** | Local image resize, convert, tint and palette extraction |
+| **Command palette** | `⌘K` / `Ctrl+K` to navigate, search or create |
+
+## Desktop experience
+
+- **Tray first** — *Quick capture*, *Open Axiom Core*, *Quit*. Closing the window destroys it; the
+  app stays in the tray.
+- **Global quick capture** — `Ctrl+Alt+Space` opens a 560×152 frameless capture window with an
+  Inbox/project picker.
+- **Single instance** — a second launch focuses the running app.
+- **Offline** — the release binary serves embedded assets; no dev server needed.
 
 ## Stack
 
 React 19 · TypeScript · Vite 8 · Tailwind CSS 4 (CSS-first tokens) · React Router 7 ·
-lucide-react. No UI kit, no state library — a typed reducer plus `localStorage`.
+lucide-react · Tauri 2 · Rust · SQLite (WAL, bundled).
+
+No UI kit, no state library, no icon package beyond lucide. State is a typed reducer; persistence
+is a snapshot into SQLite with a localStorage cache.
 
 ## Getting started
 
-Requires Node **20.19+** (or 22.12+) and pnpm.
+Requires Node **20.19+** (or 22.12+), pnpm, Rust and the Tauri prerequisites.
 
 ```bash
 pnpm install
 pnpm dev          # http://localhost:5273
+pnpm typecheck
+pnpm build
 ```
 
-| Script | What it does |
-| --- | --- |
-| `pnpm dev` | Vite dev server with HMR on port 5273 |
-| `pnpm build` | Typecheck, then build to `dist/` |
-| `pnpm preview` | Serve the production build |
-| `pnpm typecheck` | `tsc --noEmit` |
-
-> **Windows note:** `pnpm-workspace.yaml` sets `nodeLinker: hoisted` and
-> `packageImportMethod: copy` because the default symlinked layout fails on some
-> Windows/antivirus setups. If an install still dies with `ERR_PNPM_SYMLINK_FAILED`, run
-> `pnpm install --node-linker=hoisted --package-import-method=copy`.
-
-## Keyboard
-
-| Keys | Action |
-| --- | --- |
-| `⌘K` / `Ctrl+K` | Command palette |
-| `C` | New issue |
-| `⌘J` / `Ctrl+J` | New issue (alternate) |
-| `↑ ↓ ↵` | Navigate / run a palette item |
-| `⌘/Ctrl + Enter` | Save the issue dialog |
-| `Esc` | Close dialog or palette |
-| `Enter` | Add a quick task / commit a tag |
-
-## Desktop app (Tauri shell)
-
-The native shell lives in `src-tauri/`. Current behaviour:
-
-- **Tray first** — the app stays resident with a tray icon: *Quick capture*, *Open Axiom Core*, *Quit*.
-- **Global quick capture** — `Ctrl+Alt+Space` anywhere opens a frameless input window; `Enter`
-  files a task due today, `Esc` or losing focus dismisses it.
-- **Windows are disposable** — closing the main window destroys it (no hidden WebView2
-  processes); the tray or a second launch recreates it.
-- **Single instance** — launching Axiom Core again focuses the existing app instead of starting another.
-- **First launch opens the window**; `AXIOM_START_HIDDEN=1` starts tray-only.
-
-Measured on this machine, production build (`cargo build --release --features custom-protocol`):
-
-| State | Result |
-| --- | --- |
-| Tray only, no window | 31.3 MB working set / 5.6 MB private, 0 WebView2 processes |
-| Main window open | 6 WebView2 processes, ~325 MB working set / ~220 MB private |
-| Window closed again | 0 WebView2 processes, app still running in the tray |
-| Release binary | 11.1 MB, runs from embedded assets with no dev server |
-
-The window number is a **development** measurement — the dev server, source maps and the React
-dev build inflate it. Measure a production build before treating it as real.
-
-### Running the desktop shell
+Desktop shell:
 
 ```bash
-pnpm dev                                         # terminal 1 — UI dev server on 5273
-cargo run --manifest-path src-tauri/Cargo.toml   # terminal 2 — desktop shell
+pnpm dev                                         # terminal 1 — Vite on 5273
+cargo run --manifest-path src-tauri/Cargo.toml   # terminal 2
 ```
 
-`pnpm tauri dev` also works and starts Vite itself, if `pnpm` is on your PATH.
+Release:
+
+```bash
+pnpm build
+cargo build --release --features custom-protocol --manifest-path src-tauri/Cargo.toml
+```
 
 | Variable | Effect |
 | --- | --- |
 | `AXIOM_START_HIDDEN=1` | Start in the tray without opening a window |
-| `AXIOM_WEBVIEW_DATA_DIR=<path>` | Keep the WebView2 profile somewhere other than AppData |
+| `AXIOM_DATA_DIR=<path>` | Put `axiom.db` somewhere other than AppData |
+| `AXIOM_WEBVIEW_DATA_DIR=<path>` | Keep the WebView2 profile outside AppData |
 
-The second one exists because a sandboxed terminal cannot write the default
-`%LOCALAPPDATA%\com.axiom.core` profile; outside such a session it is unnecessary.
+## Your data
 
-SQLite persistence is in place (`load_state` / `save_state` commands over a WAL database). The
-Library module is next (see [LIBRARY.md](docs/resources/LIBRARY.md)); the browser build remains the fastest way
-to iterate on the UI.
-
-## Themes and design system
-
-Three themes ship: **Classic** (crimson on near-black, default), **Paper** (warm editorial light,
-serif headings, rust accent) and **Terminal** (phosphor green, monospace, square edges). Switch
-from the palette icon in the sidebar or top bar, or `⌘K` → *Theme*. `?theme=terminal` previews a
-theme directly.
-
-![Terminal theme](docs/preview-terminal.png)
-
-The choice is stored in `AppState` and SQLite and applied before first paint.
-
-- Tokens and theme blocks: `src/index.css` (every colour, radius and display font is a variable).
-- Theme registry and legacy mapping: `src/lib/themes.ts`.
-- Full system reference and change recipes: [DESIGN.md](docs/resources/DESIGN.md).
-
-Two design explorations live in `design/` and are rendered for comparison:
-
-| Direction | Image | Character |
-| --- | --- | --- |
-| Paper | `docs/style-paper.png` | editorial, serif, rust on cream, hairline rules |
-| Terminal | `docs/style-terminal.png` | monospace, green-on-black, square, prompt-led |
-
-They are static mockups, not shipped themes — useful for choosing a direction before spending
-effort on a theme block.
+- **SQLite** at `%APPDATA%\com.axiom.core\axiom.db`; WAL mode, versioned schema.
+- **localStorage** cache (`axiom.state.v1`) for instant start and cross-window sync.
+- Library copies store a path **relative to the volume**, never a drive letter.
+- **Reset demo data** restores the seed workspace. Deleting `axiom.db` while the app is closed
+  resets everything.
+- No sync, no export yet — planned.
 
 ## Documentation
 
-![Documentation inside the app](docs/preview-docs.png)
+The app ships its own offline documentation (`/docs`), and the source lives in `docs/`:
 
-- [Documentation index](docs/README.md) — pages, features and where their code lives
-- [Project structure](docs/project-structure.md) — every folder and what belongs there
-- [Architecture](docs/architecture.md) — stack, data flow, persistence, desktop shell
-- [Pages](docs/pages/dashboard.md) — dashboard, issues, projects, notes
-- [Features](docs/features/command-palette.md) — palette, dialogs, quick capture, themes, persistence
-- [Resources](docs/resources/SPEC.md) — product spec, library spec, design system
+- [Documentation index](docs/README.md)
+- [Project structure](docs/project-structure.md)
+- [Architecture](docs/architecture.md)
+- [Core API](docs/resources/CORE-API.md)
+- [Design system](docs/resources/DESIGN.md)
+- [Product spec](docs/resources/SPEC.md)
+
+![Documentation inside the app](docs/assets/screens/preview-docs.png)
 
 ## Structure
 
 ```
 src/
-├── components/   app shell, sidebar, topbar, UI primitives, issue row/dialog, palette
-├── lib/          types · meta · seed data · store (reducer + persistence) · ui state · derive
-├── pages/        dashboard · issues · projects · notes
-├── App.tsx       providers, routes and global overlays
+├── components/   shell, sidebar, topbar, primitives, issues, documents, context menus
+├── lib/          types, store, derive, actions, core API, appearance, themes
+├── pages/        dashboard, issues, projects, project detail, notes, documents, library, tools, settings
+├── App.tsx       providers, routes, overlays
 └── index.css     design tokens and base styles
+src-tauri/        Rust shell, SQLite, tray, scanner, commands
+docs/             in-app documentation and assets
 ```
 
-Data is defined in `src/lib/types.ts`; derived values (counts, progress, focus ordering) live in
-`src/lib/derive.ts` and are never stored.
+## Roadmap
 
-## Your data
+1. Rich task content: checklists, subtasks and attachments.
+2. WYSIWYG editing for tasks, project briefs, notes and documents.
+3. Note/document links to specific tasks.
+4. A real Tools area (image resize/convert/tint and more) with profile moved to a User screen.
+5. Configurable media scanner: path, depth, media type.
+6. Export/import and a second window.
 
-In the desktop app, state lives in **SQLite** at `%APPDATA%\com.axiom.core\axiom.db`
-(override with `AXIOM_DATA_DIR`). The database runs in WAL mode, carries a versioned schema
-(`PRAGMA user_version`) and mirrors the workspace: `projects`, `issues`, `notes`, `activity`.
-The Library tables are already prepared — `media_kinds` (seeded with six editable kinds),
-`media_items`, `volumes`, `media_copies`, `media_progress`, `tags` — even though that UI is
-still ahead of us.
-
-The browser build and the in-app cache still use `localStorage` (`axiom.state.v1`), which is
-also what carries state between the main window and quick capture. Saves to SQLite are debounced
-by 400 ms and sent as one snapshot per change — exact and simple at personal scale, to be
-replaced by per-entity commands when the Library scanner lands.
-
-**Reset demo data** restores the seed workspace in both stores (including the default identity). Deleting the database file while
-Axiom Core is closed resets it completely. There is no sync yet — export/import is planned (see
-[LIBRARY.md](docs/resources/LIBRARY.md)).
-
-## Personalization
-
-Rename the app, the workspace and yourself from **Settings → Profile** (sidebar footer, top-bar
-avatar, or `⌘K` → *Settings*). The sidebar brand, greeting, window title and quick capture all update
-immediately; values are stored with your data (`identity.*` in SQLite, inside `axiom.state.v1` in
-localStorage). Defaults live in `src/lib/identity.ts`; the executable and bundle metadata live in
-`src-tauri/tauri.conf.json`.
-## Media data layer
-
-The Library tables and commands exist ahead of the UI:
-
-- `load_library` — kinds, items, copies, volumes, progress
-- `save_media_item`, `attach_media_copy`, `upsert_volume`
-
-They live in `src-tauri/src/data/db.rs`, with TypeScript mirrors in `src/lib/library-types.ts`
-and `src/lib/library-api.ts`. Six editable media kinds are seeded: movies, series, anime, games,
-books, music. Copies store a `relPath` relative to their volume, never a drive letter.
-## Planning
-
-The product spec, decisions, non-goals and roadmap live in [SPEC.md](docs/resources/SPEC.md). Open questions at
-the end of that file are the intended starting points for the next round of design.
+The detailed spec lives in [SPEC.md](docs/resources/SPEC.md); open questions are at the end of that
+file.

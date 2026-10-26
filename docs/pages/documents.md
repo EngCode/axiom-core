@@ -4,7 +4,7 @@
 **Source:** [`src/pages/documents.tsx`](../../src/pages/documents.tsx) ·
 **List:** [`document-list.tsx`](../../src/components/document-list.tsx)
 
-![Documents page](../preview-documents.png)
+![Documents page](../assets/screens/preview-documents.png)
 
 Documents are the long-form counterpart to Notes: briefs, specs and decision records that can live
 inside a project.
@@ -14,8 +14,8 @@ inside a project.
 | Control | Behaviour |
 | --- | --- |
 | Title | inline, autosaves through `updateDocument` |
-| Project | optional; assigns the document to a project |
-| Write / Preview | Markdown source or rendered preview |
+| Project | optional; assigns the document to a project |`n| Task | optional; links the document to a specific task |
+| Write / Preview | shared rich-text editor or rendered preview |
 | Pin | keeps the document at the top of lists |
 | Delete | confirmed; removes the document |
 | Search | filters title and content |
@@ -39,6 +39,6 @@ Documents live in `AppState.documents` and persist as JSON in the SQLite `meta` 
 ## Known gaps
 
 - No hierarchy, backlinks or table of contents yet.
-- Markdown preview resolves relative links against the bundled docs, not the document graph.
+- Rich preview resolves relative links against the bundled docs, not the document graph.
 - No export to PDF/Markdown.
 - No collaborative history or versions.

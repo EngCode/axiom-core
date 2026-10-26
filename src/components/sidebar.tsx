@@ -298,7 +298,7 @@ export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
       {/*=====> Footer Controls <=====*/}
       <div className="mt-auto border-t border-line p-2">
         <Link
-          to="/settings"
+          to="/user"
           onClick={onClose}
           className={cn(
             'mb-1 flex items-center gap-2 rounded-control px-2 py-1.5 text-[11.5px] text-fg-subtle transition-colors hover:bg-surface-2 hover:text-fg',
@@ -306,7 +306,7 @@ export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
           )}
         >
           <Settings2 className="size-3.5 shrink-0" />
-          <span className={cn(collapsed && 'lg:hidden')}>Settings</span>
+          <span className={cn(collapsed && 'lg:hidden')}>User</span>
         </Link>
         <div className="flex items-center gap-0.5">
           <ThemePicker placement="up" />

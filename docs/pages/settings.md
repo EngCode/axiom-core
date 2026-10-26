@@ -1,12 +1,12 @@
-# Settings
+# User
 
-**Route:** `/settings` · **Status:** shipped ·
-**Source:** [`src/pages/settings.tsx`](../../src/pages/settings.tsx)
+**Route:** `/user` · **Status:** shipped ·
+**Source:** [`src/pages/user.tsx`](../../src/pages/user.tsx)
 
-Settings is the home for appearance, identity and local data. It is reachable from the sidebar
+User is the home for your profile, appearance, help and local data. It is reachable from the sidebar
 footer, the top-bar avatar, the command palette and the Tools page.
 
-![Settings page](../preview-settings.png)
+![Settings page](../assets/screens/preview-settings.png)
 
 ## Appearance
 
@@ -25,7 +25,7 @@ Theme details live in [themes.md](../features/themes.md).
 
 ### Background
 
-![Grid background](../preview-background.png)
+![Grid background](../assets/screens/preview-background.png)
 
 A decorative layer is blended into the current theme canvas:
 
@@ -54,7 +54,7 @@ including identity and appearance, and never touches media drives.
 
 ## Code map
 
-- `src/pages/settings.tsx` — page composition
+- `src/pages/user.tsx` — page composition
 - `src/lib/appearance.ts` — defaults, options and normalization
 - `src/lib/store.tsx` — `updateBackground`, `updatePageBackground`, `updateIdentity`, `resetData`
 - `src/components/app-background.tsx` — the actual layer and pattern builder

@@ -33,8 +33,8 @@ page and feature has its own document; the product-level specs live in
 | `/notes?note=<id>` | Note deep link | [notes.md](pages/notes.md) | opens a specific note |
 | `/documents` | Documents | [documents.md](pages/documents.md) | planned long-form pages; status surface only |
 | `/library` | Library | [library.md](pages/library.md) | media kinds overview; browsing planned |
-| `/tools` | Tools | [tools.md](pages/tools.md) | docs, personalization, appearance, reset |
-| `/settings` | Settings | [settings.md](pages/settings.md) | themes, background, profile, local data |
+| `/tools` | Tools catalog | [tools.md](pages/tools.md) | searchable categories, recent tools |`n| `/tools/:id` | Tool workspace | [tools.md](pages/tools.md) | local image resize, convert, tint, palette |
+| `/user` | User | [settings.md](pages/settings.md) | profile, appearance, backgrounds, help, local data |
 | *(desktop window)* | Quick capture | [quick-capture.md](features/quick-capture.md) | global hotkey, one-line capture |
 
 Unknown routes redirect to the dashboard.

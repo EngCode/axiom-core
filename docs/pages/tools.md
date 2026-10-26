@@ -1,35 +1,42 @@
 # Tools
 
-**Route:** `/tools` · **Status:** shipped ·
-**Source:** [`src/pages/tools.tsx`](../../src/pages/tools.tsx)
+**Routes:** `/tools` catalog · `/tools/:toolId` workspace ·
+**Status:** image utilities shipped ·
+**Sources:** [`src/pages/tools.tsx`](../../src/pages/tools.tsx),
+[`src/pages/tool-workspace.tsx`](../../src/pages/tool-workspace.tsx),
+[`src/lib/tools.ts`](../../src/lib/tools.ts)
 
-App-level controls that do not belong to a single workspace area. The sidebar keeps them at the
-bottom of the navigation instead of scattering icons.
+Tools are local utilities for design and development — not profile or app settings. The catalog is
+built to grow: every tool has an id, category, description and its own route.
 
-## Sections
+## Catalog
 
-| Tool | Behaviour |
-| --- | --- |
-| **Documentation** | Opens `/docs`, the offline documentation reader |
-| **Settings** | Opens `/settings` for appearance, profile and local data |
-| **Appearance** | Theme picker (Axiom, Paper, Graphite) |
-| **Workspace data** | Resets the demo workspace after a confirmation; never touches media drives |
+- Search across name, description and keywords.
+- Category filters (Image, Colour) with counts.
+- Recently opened tools, stored in `localStorage` (`axiom.tools.recent`).
+- Cards link to `/tools/<id>`; unknown ids render a not-found state.
 
-## Design notes
+## Shipped tools
 
-- Each tool is a card with one short explanation and exactly one control.
-- Destructive actions use a danger-tinted ghost button and a confirmation; there is no undo yet.
-- Identity and theme controls are duplicated in the sidebar footer for speed; Tools is the
-  discoverable home.
+| Tool | Category | What it does |
+| --- | --- | --- |
+| **Resize** | Image | width/height with locked aspect ratio and 25/50/75/100 % presets |
+| **Convert** | Image | PNG, JPEG and WebP output with quality for lossy formats |
+| **Tint** | Colour | colour wash with adjustable strength |
+| **Palette** | Colour | extracts dominant colours and copies hex values |
 
-## Code map
+Processing runs in a canvas in the WebView. Files never leave the machine.
 
-- `src/pages/tools.tsx` — page composition
-- `src/pages/settings.tsx` — appearance, profile and data
-- `src/components/theme-picker.tsx` — theme menu
-- `src/lib/store.tsx` — `resetData`
+## Adding a tool
+
+1. Add a `ToolDefinition` to `TOOLS` in `src/lib/tools.ts` (id, name, category, keywords, icon).
+2. If it is an image tool, add a mode to `ToolControls` and `applyTool` in the workspace.
+3. If it is a different kind of tool, add a workspace branch keyed by tool id.
+4. The catalog, search, filters, recent list and top-bar title read from the registry; no extra
+   navigation code.
 
 ## Next
 
-Export/import and backups belong here once the data layer grows; so does a diagnostics view for the
-database and WebView2 profile.
+- Batch processing and saved presets.
+- Contrast checker, SVG optimiser, pattern generator.
+- Tool-specific recent files (paths only, no uploads).

@@ -26,7 +26,7 @@ restore.
 | Tasks | navigates to `/issues?project=<id>` |
 | ⋯ / right-click | open, issues, new issue, archive/restore, delete |
 
-![Project context menu](../preview-project-menu.png)
+![Project context menu](../assets/screens/preview-project-menu.png)
 
 Progress is derived from issues with that `projectId`; the bar is colour-coded per project, not
 per completion state.
@@ -70,9 +70,9 @@ word. Keys are not editable after creation in this version.
 - Project quick links in the sidebar follow the same order.
 - Dragging is disabled from buttons and links inside the card, so Task/Details/Tasks/⋯ still work.
 - Archived projects are not draggable.
-![Delete project dialog](../preview-delete-project.png)
+![Delete project dialog](../assets/screens/preview-delete-project.png)
 
-![Project order after dragging](../preview-pointer-project.png)
+![Project order after dragging](../assets/screens/preview-pointer-project.png)
 
 ## Empty states
 
@@ -99,6 +99,6 @@ happens rather than in a separate document. It uses the `AXI` key and the rose p
 - Bugs are labelled `bug`; features are labelled `feature`; design/audit work uses `design`.
 - AXI-18 records the top-bar theme menu overflow, including the fix.
 
-![Axiom Core project](../preview-projects.png)
+![Axiom Core project](../assets/screens/preview-projects.png)
 
-![Axiom Core issues](../preview-axiom-issues.png)
+![Axiom Core issues](../assets/screens/preview-axiom-issues.png)

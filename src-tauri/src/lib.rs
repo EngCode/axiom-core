@@ -19,7 +19,8 @@ use tauri_plugin_global_shortcut::{
 use std::sync::atomic::{AtomicBool, Ordering};
 
 pub mod data;
-mod library_scan;
+mod attachments;
+pub mod library_scan;
 
 use data::api::{IssueDraft, IssuePatch};
 use data::db;
@@ -307,8 +308,28 @@ fn pick_media_folder() -> Option<String> {
 }
 
 #[tauri::command]
-fn scan_media_folder(path: String) -> Result<Vec<library_scan::ScanCandidate>, String> {
-    library_scan::scan(&path)
+fn scan_media_folder(
+    path: String,
+    depth: u32,
+    media_type: String,
+) -> Result<Vec<library_scan::ScanCandidate>, String> {
+    library_scan::scan(&path, depth, &media_type)
+}
+#[tauri::command]
+fn pick_issue_attachment(
+    app: tauri::AppHandle,
+) -> Result<Option<attachments::AttachmentPayload>, String> {
+    attachments::pick_and_copy(&app)
+}
+
+#[tauri::command]
+fn open_issue_attachment(app: tauri::AppHandle, path: String) -> Result<(), String> {
+    attachments::open(&app, &path)
+}
+
+#[tauri::command]
+fn delete_issue_attachment(app: tauri::AppHandle, path: String) -> Result<(), String> {
+    attachments::remove(&app, &path)
 }
 //=====> Application Setup <=====//
 
@@ -332,7 +353,10 @@ pub fn run() {
             core_issue_update,
             core_issue_create,
             pick_media_folder,
-            scan_media_folder
+            scan_media_folder,
+            pick_issue_attachment,
+            open_issue_attachment,
+            delete_issue_attachment
         ])
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             schedule_main_window(app);

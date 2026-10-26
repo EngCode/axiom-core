@@ -114,6 +114,26 @@ export interface Milestone {
   issueIds: string[]
   createdAt: string
 }
+export interface ChecklistItem {
+  id: string
+  text: string
+  done: boolean
+}
+
+export interface Attachment {
+  id: string
+  name: string
+  size: number
+  path: string
+  createdAt: string
+}
+
+export interface IssueExtras {
+  checklist: ChecklistItem[]
+  attachments: Attachment[]
+  /** Present when this issue is a subtask. */
+  parentId: string | null
+}
 export interface AppState {
   version: number
   identity: Identity
@@ -125,6 +145,8 @@ export interface AppState {
   notes: Note[]
   documents: DocumentRecord[]
   milestones: Milestone[]
+  issueExtras: Record<string, IssueExtras>
+  taskLinks: Record<string, string>
   activity: ActivityEntry[]
   counters: {
     issue: number

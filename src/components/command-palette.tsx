@@ -181,8 +181,8 @@ export function CommandPalette() {
         title: 'Personalization',
         subtitle: 'Appearance, profile and local data',
         icon: <Settings2 className="size-3.5" />,
-        keywords: 'settings identity name rename workspace owner theme',
-        run: () => navigate('/settings'),
+        keywords: 'user profile identity appearance settings',
+        run: () => navigate('/user'),
       },
       {
         id: 'action-theme',

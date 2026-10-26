@@ -11,7 +11,12 @@ import { Link } from 'react-router-dom'
 
 import { Button, Card, CardHeader, EmptyState, PageHeader } from '@/components/ui'
 import { attachMediaCopy, loadLibrary, saveMediaItem, upsertVolume } from '@/lib/library-api'
-import { pickMediaFolder, scanMediaFolder, type ScanCandidate } from '@/lib/library-scan'
+import {
+  pickMediaFolder,
+  scanMediaFolder,
+  type ScanCandidate,
+  type ScanMediaType,
+} from '@/lib/library-scan'
 import type { LibrarySnapshot, MediaCopy, MediaItem, Volume } from '@/lib/library-types'
 import { formatRelative } from '@/lib/utils'
 
@@ -43,6 +48,8 @@ export default function LibraryPage() {
   const [candidates, setCandidates] = useState<ScanCandidate[]>([])
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [scanning, setScanning] = useState(false)
+  const [scanDepth, setScanDepth] = useState(3)
+  const [scanType, setScanType] = useState<ScanMediaType>('all')
   const [importing, setImporting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -63,7 +70,7 @@ export default function LibraryPage() {
     try {
       const folder = await pickMediaFolder()
       if (!folder) return
-      const found = await scanMediaFolder(folder)
+      const found = await scanMediaFolder(folder, scanDepth, scanType)
       setCandidates(found)
       setSelected(new Set(found.map((candidate) => candidate.path)))
       if (found.length === 0) setError('No supported media files were found in that folder.')
@@ -197,6 +204,38 @@ export default function LibraryPage() {
         }
       />
 
+      <Card className="flex flex-wrap items-end gap-3 p-3">
+        <label className="text-[10px] font-medium tracking-[0.12em] text-fg-subtle uppercase">
+          Media type
+          <select
+            value={scanType}
+            onChange={(event) => setScanType(event.target.value as ScanMediaType)}
+            className="mt-1 block h-8 rounded-control border border-line bg-surface-2 px-2 text-[11.5px] text-fg outline-none"
+          >
+            <option value="all">Everything</option>
+            <option value="movies">Movies</option>
+            <option value="series">Series</option>
+            <option value="anime">Anime</option>
+            <option value="games">Games</option>
+            <option value="books">Books</option>
+            <option value="music">Music</option>
+          </select>
+        </label>
+        <label className="text-[10px] font-medium tracking-[0.12em] text-fg-subtle uppercase">
+          Depth
+          <input
+            type="number"
+            min={1}
+            max={8}
+            value={scanDepth}
+            onChange={(event) => setScanDepth(Number(event.target.value))}
+            className="mt-1 block h-8 w-20 rounded-control border border-line bg-surface-2 px-2 text-[11.5px] text-fg outline-none"
+          />
+        </label>
+        <p className="max-w-md pb-1 text-[10.5px] leading-4 text-fg-subtle">
+          Depth 1 reads files in this folder only. For games, each folder at that depth is one game.
+        </p>
+      </Card>
       {error ? (
         <Card className="border-danger/30 bg-danger/5 px-4 py-2.5 text-[11.5px] text-danger">
           {error}

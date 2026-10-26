@@ -6,7 +6,7 @@
 //=====> Imports <=====//
 
 import { useState } from 'react'
-import { GripVertical, MoreHorizontal } from 'lucide-react'
+import { CheckSquare, GripVertical, ListTree, MoreHorizontal, Paperclip } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 import { ContextMenu } from '@/components/context-menu'
@@ -51,6 +51,11 @@ export function IssueRow({
 
   //===> Derive Display Values <===//
   const project = state.projects.find((candidate) => candidate.id === issue.projectId)
+  const extras = state.issueExtras[issue.id]
+  const checklistDone = extras?.checklist.filter((item) => item.done).length ?? 0
+  const subtaskCount = state.issues.filter(
+    (candidate) => state.issueExtras[candidate.id]?.parentId === issue.id,
+  ).length
   const done = issue.status === 'done'
 
   //===> Build Action Handlers <===//
@@ -152,6 +157,33 @@ export function IssueRow({
           </span>
         ) : null}
 
+        {extras && extras.checklist.length > 0 ? (
+          <span
+            className="hidden shrink-0 items-center gap-0.5 text-[9.5px] text-fg-subtle sm:flex"
+            title={`${checklistDone}/${extras.checklist.length} checklist items`}
+          >
+            <CheckSquare className="size-3" />
+            {checklistDone}/{extras.checklist.length}
+          </span>
+        ) : null}
+        {subtaskCount > 0 ? (
+          <span
+            className="hidden shrink-0 items-center gap-0.5 text-[9.5px] text-fg-subtle sm:flex"
+            title={`${subtaskCount} subtasks`}
+          >
+            <ListTree className="size-3" />
+            {subtaskCount}
+          </span>
+        ) : null}
+        {extras && extras.attachments.length > 0 ? (
+          <span
+            className="hidden shrink-0 items-center gap-0.5 text-[9.5px] text-fg-subtle sm:flex"
+            title={`${extras.attachments.length} attachments`}
+          >
+            <Paperclip className="size-3" />
+            {extras.attachments.length}
+          </span>
+        ) : null}
         {showDue ? <DueChip dueDate={issue.dueDate} className="hidden sm:inline-flex" /> : null}
 
         <span title={PRIORITY_META[issue.priority].label} className="shrink-0">

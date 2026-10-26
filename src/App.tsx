@@ -19,8 +19,9 @@ import IssuesPage from '@/pages/issues'
 import LibraryPage from '@/pages/library'
 import NotesPage from '@/pages/notes'
 import ProjectDetailPage from '@/pages/project-detail'
-import SettingsPage from '@/pages/settings'
+import UserPage from '@/pages/user'
 import ToolsPage from '@/pages/tools'
+import ToolWorkspacePage from '@/pages/tool-workspace'
 //====> Route Loading Fallback <====//
 function RouteLoading() {
   //===> Render Fallback <===//
@@ -50,7 +51,9 @@ export default function App() {
               <Route path="documents" element={<DocumentsPage />} />
               <Route path="library" element={<LibraryPage />} />
               <Route path="tools" element={<ToolsPage />} />
-              <Route path="settings" element={<SettingsPage />} />
+              <Route path="tools/:toolId" element={<ToolWorkspacePage />} />
+              <Route path="user" element={<UserPage />} />
+              <Route path="settings" element={<Navigate to="/user" replace />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
           </Routes>

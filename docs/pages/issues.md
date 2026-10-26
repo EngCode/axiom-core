@@ -51,6 +51,17 @@ you are currently looking at. Filter state other than project lives in memory an
 - The dialog is documented in [issue-dialog.md](../features/issue-dialog.md).
 - The status circle is the fastest path: one click completes; another restores to todo.
 
+## Rich task content
+
+Inside the edit dialog an existing task has three extra surfaces:
+
+- **Checklist** — items with done state; the row shows a `done/total` badge.
+- **Subtasks** — child issues created with `parentId`; complete or open them from the parent.
+- **Attachments** — native file picker copies the file into the app data folder; open or remove it
+  later. Paths are validated against that folder before opening.
+
+The description uses the shared rich-text editor (bold, italic, underline, heading, lists, quote,
+link). Notes and documents can also be linked to a task; the task dialog shows those links.
 ## Empty states
 
 - No issues at all: “No issues yet” with a create action.
@@ -66,4 +77,4 @@ circles complete.
 - No automatic sorting (priority / due date) or grouping switch; order is manual and persisted.
 - No bulk selection, multi-select or saved views.
 - Filter state is not persisted across reloads.
-- No sub-tasks or dependencies.
+- No task dependencies or recurring tasks.

@@ -7,6 +7,7 @@ import { ChevronRight, Menu, Plus, Search } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 
 import { useApp } from '@/lib/store'
+import { toolById } from '@/lib/tools'
 import { useUI } from '@/lib/ui'
 
 import { ThemePicker } from './theme-picker'
@@ -21,7 +22,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/documents': 'Documents',
   '/library': 'Library',
   '/tools': 'Tools',
-  '/settings': 'Settings',
+  '/user': 'User',
 }
 
 export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
@@ -34,7 +35,10 @@ export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
   const project = projectId
     ? state.projects.find((candidate) => candidate.id === projectId)
     : undefined
-  const title = project?.name ?? PAGE_TITLES[location.pathname] ?? 'Not found'
+  const tool = location.pathname.startsWith('/tools/')
+    ? toolById(location.pathname.split('/')[2])
+    : undefined
+  const title = project?.name ?? tool?.name ?? PAGE_TITLES[location.pathname] ?? 'Not found'
 
   return (
     <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-2 border-b border-line bg-surface/80 px-3 backdrop-blur-md sm:px-4">
@@ -72,7 +76,7 @@ export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
 
         <ThemePicker className="hidden sm:block" />
 
-        <Link to="/settings" aria-label="Settings" title="Settings"><Avatar name={state.identity.ownerName} size="md" className="ms-0.5" /></Link>
+        <Link to="/user" aria-label="User" title="User"><Avatar name={state.identity.ownerName} size="md" className="ms-0.5" /></Link>
       </div>
     </header>
   )

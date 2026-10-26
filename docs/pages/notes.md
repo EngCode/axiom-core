@@ -48,11 +48,11 @@ Tag editing details:
 ## Data
 
 Notes live in `AppState.notes`; edits go through `updateNote`, which also refreshes `updatedAt`.
-The note body is plain text in this version — no Markdown rendering, attachments or backlinks.
+The note body uses the shared rich-text editor. A note can be linked to a specific task from the editor header.
 
 ## Known gaps
 
-- No Markdown or rich text, no checklists or slash commands.
+- No checklists, slash commands or backlinks yet.
 - No backlinks, wiki links, or note ↔ task conversion.
 - No export, folder hierarchy, or note history.
 - Search is a substring match, not a full-text index.

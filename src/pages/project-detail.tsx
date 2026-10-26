@@ -40,6 +40,7 @@ import {
 } from '@/components/ui'
 import { projectProgress } from '@/lib/derive'
 import { PROJECT_COLORS, PROJECT_STATUS_META } from '@/lib/meta'
+import { RichContent, isHtml } from '@/lib/rich-text'
 import { useApp } from '@/lib/store'
 import { useUI } from '@/lib/ui'
 import { cn, formatDate, localISODate, pluralize } from '@/lib/utils'
@@ -534,7 +535,7 @@ export default function ProjectDetailPage() {
       <PageHeader
         eyebrow={`${project.key} · ${PROJECT_STATUS_META[project.status].label}`}
         title={project.name}
-        description={project.description || 'No description yet.'}
+        description={isHtml(project.description) ? undefined : project.description || 'No description yet.'}
         actions={
           <>
             <Button
@@ -554,6 +555,14 @@ export default function ProjectDetailPage() {
         }
       />
 
+      {isHtml(project.description) ? (
+        <div className="px-1">
+          <RichContent
+            content={project.description}
+            className="text-[12.5px] leading-6 text-fg-muted"
+          />
+        </div>
+      ) : null}
       <Stats projectId={project.id} />
       <ProjectTabs projectId={project.id} tab={tab} />
 

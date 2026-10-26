@@ -9,6 +9,8 @@ import { invoke } from '@tauri-apps/api/core'
 
 import { isTauri } from './tauri'
 
+export type ScanMediaType = 'all' | 'movies' | 'series' | 'anime' | 'games' | 'books' | 'music'
+
 export interface ScanCandidate {
   path: string
   relPath: string
@@ -26,7 +28,11 @@ export async function pickMediaFolder(): Promise<string | null> {
   return invoke<string | null>('pick_media_folder')
 }
 
-export async function scanMediaFolder(path: string): Promise<ScanCandidate[]> {
+export async function scanMediaFolder(
+  path: string,
+  depth: number,
+  mediaType: ScanMediaType,
+): Promise<ScanCandidate[]> {
   if (!isTauri()) return []
-  return invoke<ScanCandidate[]>('scan_media_folder', { path })
+  return invoke<ScanCandidate[]>('scan_media_folder', { path, depth, mediaType })
 }

@@ -19,11 +19,12 @@ import {
   Select,
 } from '@/components/ui'
 import { sortNotes } from '@/lib/derive'
+import { RichTextEditor, plainText } from '@/lib/rich-text'
 import { useApp } from '@/lib/store'
 import { cn, formatRelative, truncate } from '@/lib/utils'
 
 export default function NotesPage() {
-  const { state, addNote, updateNote, deleteNote, toggleNotePin } = useApp()
+  const { state, addNote, updateNote, deleteNote, toggleNotePin, linkTask } = useApp()
   const [searchParams, setSearchParams] = useSearchParams()
   const [query, setQuery] = useState('')
   const [tagDraft, setTagDraft] = useState('')
@@ -138,7 +139,7 @@ export default function NotesPage() {
                       </span>
                     </div>
                     <p className="mt-0.5 truncate text-[11px] text-fg-subtle">
-                      {truncate(note.content, 80) || 'Empty note'}
+                      {truncate(plainText(note.content), 80) || 'Empty note'}
                     </p>
                     <div className="mt-1 flex items-center gap-1.5">
                       {note.tags.slice(0, 2).map((tag) => (
@@ -177,7 +178,19 @@ export default function NotesPage() {
                     </option>
                   ))}
                 </Select>
-                <IconButton
+                <Select
+                  value={state.taskLinks[`note:${selected.id}`] ?? ''}
+                  onChange={(event) => linkTask(`note:${selected.id}`, event.target.value || null)}
+                  aria-label="Linked task"
+                  className="h-6 w-auto min-w-[112px] border-transparent bg-transparent pr-6 text-[10.5px] text-fg-subtle hover:border-line"
+                >
+                  <option value="">No task</option>
+                  {state.issues.map((issue) => (
+                    <option key={issue.id} value={issue.id}>
+                      {issue.key} · {issue.title}
+                    </option>
+                  ))}
+                </Select>                <IconButton
                   label={selected.pinned ? 'Unpin note' : 'Pin note'}
                   onClick={() => toggleNotePin(selected.id)}
                   className={selected.pinned ? 'text-accent hover:text-accent' : ''}
@@ -242,12 +255,13 @@ export default function NotesPage() {
                 />
               </div>
 
-              <textarea
+              <RichTextEditor
+                key={selected.id}
                 value={selected.content}
-                onChange={(event) => updateNote(selected.id, { content: event.target.value })}
+                onChange={(content) => updateNote(selected.id, { content })}
                 placeholder="Start writing…"
-                aria-label="Note content"
-                className="mt-3 min-h-[320px] w-full flex-1 resize-none bg-transparent text-[13.5px] leading-7 text-fg outline-none placeholder:text-fg-subtle/70"
+                className="mt-3 flex-1 border-0 bg-transparent"
+                minHeight={320}
               />
             </div>
           </Card>

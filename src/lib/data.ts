@@ -553,7 +553,156 @@ const seedIssues: SeedIssue[] = [
     createdDaysAgo: 0,
     completedDaysAgo: 0,
   },
-]
+  {
+    id: 'i-api-37',
+    key: 'AXI-37',
+    title: 'Task checklists and subtasks',
+    description:
+      'Checklist items with progress, child issues with parentId, completion rollup and row badges.',
+    status: 'done',
+    priority: 'high',
+    projectId: 'p-axiom',
+    labels: ['feature', 'tasks'],
+    dueDate: null,
+    createdDaysAgo: 0,
+    completedDaysAgo: 0,
+  },
+  {
+    id: 'i-api-38',
+    key: 'AXI-38',
+    title: 'Task file attachments',
+    description:
+      'Native file picker copies attachments into app data; open, remove and validate paths. Attachments persist in issueExtras.',
+    status: 'done',
+    priority: 'high',
+    projectId: 'p-axiom',
+    labels: ['feature', 'tasks'],
+    dueDate: null,
+    createdDaysAgo: 0,
+    completedDaysAgo: 0,
+  },
+  {
+    id: 'i-api-39',
+    key: 'AXI-39',
+    title: 'Shared WYSIWYG editor',
+    description:
+      'One rich-text editor for task descriptions, project briefs, notes and documents, with sanitisation and legacy Markdown conversion.',
+    status: 'done',
+    priority: 'high',
+    projectId: 'p-axiom',
+    labels: ['feature', 'editor'],
+    dueDate: null,
+    createdDaysAgo: 0,
+    completedDaysAgo: 0,
+  },
+  {
+    id: 'i-api-40',
+    key: 'AXI-40',
+    title: 'Link notes and documents to tasks',
+    description:
+      'Task links from note and document headers, shown back on the task under Linked.',
+    status: 'done',
+    priority: 'medium',
+    projectId: 'p-axiom',
+    labels: ['feature', 'links'],
+    dueDate: null,
+    createdDaysAgo: 0,
+    completedDaysAgo: 0,
+  },
+  {
+    id: 'i-api-41',
+    key: 'AXI-41',
+    title: 'User screen and scalable Tools catalog',
+    description:
+      'Profile and appearance moved to /user; Tools became a searchable category catalog with individual tool routes and recent tools.',
+    status: 'done',
+    priority: 'high',
+    projectId: 'p-axiom',
+    labels: ['feature', 'tools'],
+    dueDate: null,
+    createdDaysAgo: 0,
+    completedDaysAgo: 0,
+  },
+  {
+    id: 'i-api-42',
+    key: 'AXI-42',
+    title: 'Docs assets tree and README rewrite',
+    description:
+      'Screenshots moved into docs/assets/screens and docs/assets/styles; README rewritten for personal and freelance use.',
+    status: 'done',
+    priority: 'low',
+    projectId: 'p-axiom',
+    labels: ['docs', 'polish'],
+    dueDate: null,
+    createdDaysAgo: 0,
+    completedDaysAgo: 0,
+  },
+  {
+    id: 'i-api-43',
+    key: 'AXI-43',
+    title: 'Configurable media scanner',
+    description:
+      'Library scan takes media type and depth, classifies files or game folders, and was probed against the D: movie, series and game libraries.',
+    status: 'done',
+    priority: 'high',
+    projectId: 'p-axiom',
+    labels: ['feature', 'library'],
+    dueDate: null,
+    createdDaysAgo: 0,
+    completedDaysAgo: 0,
+  },
+  {
+    id: 'i-api-44',
+    key: 'AXI-44',
+    title: 'Project edit with rich brief',
+    description:
+      'Projects can only be edited at creation; add an edit dialog so the rich brief and target date can change later.',
+    status: 'todo',
+    priority: 'medium',
+    projectId: 'p-axiom',
+    labels: ['feature', 'projects'],
+    dueDate: addDaysISO(14),
+    createdDaysAgo: 0,
+  },
+  {
+    id: 'i-api-45',
+    key: 'AXI-45',
+    title: 'GList inventory and metadata pipeline',
+    description:
+      'Parse the GList Markdown inventories and add a metadata/provider layer on top of the folder scanner.',
+    status: 'todo',
+    priority: 'medium',
+    projectId: 'p-axiom',
+    labels: ['feature', 'media'],
+    dueDate: addDaysISO(30),
+    createdDaysAgo: 0,
+  },
+  {
+    id: 'i-api-46',
+    key: 'AXI-46',
+    title: 'Tools batch, presets and contrast checker',
+    description:
+      'Batch processing, saved presets and a colour-contrast tool on top of the new catalog.',
+    status: 'todo',
+    priority: 'low',
+    projectId: 'p-axiom',
+    labels: ['feature', 'tools'],
+    dueDate: null,
+    createdDaysAgo: 0,
+  },
+  {
+    id: 'i-api-47',
+    key: 'AXI-47',
+    title: 'Attachment previews and open-with',
+    description:
+      'Thumbnails for image/PDF attachments and an OS open-with path from the task.',
+    status: 'todo',
+    priority: 'low',
+    projectId: 'p-axiom',
+    labels: ['feature', 'tasks'],
+    dueDate: null,
+    createdDaysAgo: 0,
+  },]
 
 const issues: Issue[] = seedIssues.map(({ createdDaysAgo, completedDaysAgo, ...issue }) => {
   const createdAt = daysAgo(createdDaysAgo, 9)
@@ -799,6 +948,32 @@ export function createSeedState(): AppState {
     notes,
     documents,
     milestones,
+    issueExtras: {
+      'i-axiom-16': {
+        checklist: [
+          { id: 'c-api-1', text: 'Versioned read commands', done: true },
+          { id: 'c-api-2', text: 'Issue update/create mutations', done: true },
+          { id: 'c-api-3', text: 'Typed frontend client', done: true },
+          { id: 'c-api-4', text: 'Route UI writes through the API', done: false },
+        ],
+        attachments: [],
+        parentId: null,
+      },
+      'i-axiom-4': {
+        checklist: [
+          { id: 'c-doc-1', text: 'Editor and autosave', done: true },
+          { id: 'c-doc-2', text: 'Project documents', done: true },
+          { id: 'c-doc-3', text: 'Nesting and backlinks', done: false },
+        ],
+        attachments: [],
+        parentId: null,
+      },
+    },
+    taskLinks: {
+      'note:n-axiom-plan': 'i-axiom-16',
+      'doc:d-core-api': 'i-axiom-16',
+      'doc:d-axiom-brief': 'i-axiom-11',
+    },
     activity: [
       { id: 'a-axiom-1', kind: 'project', message: 'Created project · Axiom Core', at: daysAgo(2, 10) },
       { id: 'a-axiom-2', kind: 'issue', message: 'Completed AXI-18 · Fix the theme menu overflow', at: daysAgo(0, 12) },
@@ -809,6 +984,6 @@ export function createSeedState(): AppState {
       { id: 'a-5', kind: 'issue', message: 'Completed WEB-5 · Ship dark mode toggle', at: daysAgo(2, 16) },
       { id: 'a-6', kind: 'project', message: 'Created project · Reading list', at: daysAgo(21, 10) },
     ],
-    counters: { issue: 36 },
+    counters: { issue: 47 },
   }
 }

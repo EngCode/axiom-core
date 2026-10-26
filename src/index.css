@@ -300,3 +300,92 @@ button:disabled {
 ::selection {
   background: color-mix(in oklab, var(--accent) 28%, transparent);
 }
+/* Rich text surfaces share one typographic scale */
+.rich-text > :first-child {
+  margin-top: 0;
+}
+
+.rich-text p,
+.rich-text ul,
+.rich-text ol,
+.rich-text blockquote,
+.rich-text pre {
+  margin: 0.5rem 0;
+}
+
+.rich-text h1,
+.rich-text h2,
+.rich-text h3 {
+  margin: 1rem 0 0.4rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--fg);
+}
+
+.rich-text h1 {
+  font-size: 1.25rem;
+}
+
+.rich-text h2 {
+  font-size: 1.075rem;
+}
+
+.rich-text h3 {
+  font-size: 0.95rem;
+}
+
+.rich-text ul,
+.rich-text ol {
+  padding-inline-start: 1.25rem;
+}
+
+.rich-text ul {
+  list-style: disc;
+}
+
+.rich-text ol {
+  list-style: decimal;
+}
+
+.rich-text li {
+  margin: 0.15rem 0;
+}
+
+.rich-text blockquote {
+  border-inline-start: 2px solid var(--line-strong);
+  padding-inline-start: 0.75rem;
+  color: var(--fg-muted);
+}
+
+.rich-text code {
+  border-radius: 3px;
+  background: var(--surface-2);
+  padding: 0.1rem 0.3rem;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.85em;
+}
+
+.rich-text pre {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--theme-radius-control);
+  background: var(--surface-2);
+  padding: 0.75rem;
+}
+
+.rich-text pre code {
+  background: transparent;
+  padding: 0;
+}
+
+.rich-text a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.rich-editor:empty::before {
+  content: attr(data-placeholder);
+  color: var(--fg-subtle);
+  pointer-events: none;
+}

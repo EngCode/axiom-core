@@ -26,6 +26,7 @@ import { projectMenu, type ProjectActions } from '@/lib/actions'
 import { projectProgress } from '@/lib/derive'
 import { PROJECT_COLORS, PROJECT_COLOR_ORDER, PROJECT_STATUS_META } from '@/lib/meta'
 import { useApp } from '@/lib/store'
+import { RichTextEditor, plainText } from '@/lib/rich-text'
 import { usePointerSort, type PointerSortHandleProps } from '@/lib/use-pointer-sort'
 import type { Project, ProjectColor, ProjectInput } from '@/lib/types'
 import { useUI } from '@/lib/ui'
@@ -272,7 +273,7 @@ function ProjectCard({
         </div>
 
         <p className="mt-3 min-h-[2.4rem] text-[12px] leading-5 text-fg-muted">
-          {project.description || 'No description yet.'}
+          {plainText(project.description) || 'No description yet.'}
         </p>
 
         <div className="mt-4">
@@ -371,12 +372,11 @@ function ProjectDialog({ open, onClose }: { open: boolean; onClose: () => void }
             </Field>
 
             <Field label="Description">
-              <textarea
+              <RichTextEditor
                 value={description}
-                onChange={(event) => setDescription(event.target.value)}
-                rows={2}
+                onChange={setDescription}
                 placeholder="What does done look like?"
-                className="w-full resize-none rounded-lg border border-line bg-surface-2 px-3 py-2 text-[13px] leading-6 text-fg outline-none transition-colors placeholder:text-fg-subtle hover:border-line-strong focus:border-accent/60 focus:ring-2 focus:ring-accent/20"
+                minHeight={84}
               />
             </Field>
 

@@ -16,7 +16,7 @@ tokens; components never know which theme is active.
 | **Paper** | light | warm paper, rust accent, editorial | Inter | Georgia | 6 / 4 px |
 | **Terminal** | dark | phosphor green, square, monospace, faint scanline | JetBrains Mono | JetBrains Mono | 3 / 2 px |
 
-![Terminal theme](../preview-terminal.png)
+![Terminal theme](../assets/screens/preview-terminal.png)
 
 ## Switching
 
