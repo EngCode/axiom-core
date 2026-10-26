@@ -8,6 +8,8 @@
 //=====> Imports & Type Definitions <=====//
 
 import {
+  ChevronDown,
+  ChevronRight,
   CircleDot,
   FileText,
   FolderKanban,
@@ -24,8 +26,8 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
+import { useState } from 'react'
 
-import { appMonogram } from '@/lib/identity'
 import { useApp } from '@/lib/store'
 import { useUI } from '@/lib/ui'
 import { cn } from '@/lib/utils'
@@ -118,13 +120,19 @@ function SidebarLink({
 export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose: () => void }) {
   //===> Read App State & UI Actions <===//
   const { state, toggleSidebar } = useApp()
-  const { openPalette, openSettings } = useUI()
+  const { openPalette } = useUI()
   const location = useLocation()
 
   //===> Derive Identity & Layout <===//
   const identity = state.identity
-  const mark = appMonogram(identity.appName)
   const collapsed = state.sidebarCollapsed
+  const [workspaceOpen, setWorkspaceOpen] = useState(() => {
+    try {
+      return window.localStorage.getItem('axiom.sidebar.workspace') !== 'closed'
+    } catch {
+      return true
+    }
+  })
 
   //===> Compute Navigation Counts <===//
   const openIssues = state.issues.filter((issue) => issue.status !== 'done').length
@@ -150,8 +158,8 @@ export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
     >
       {/*=====> Workspace Identity <=====*/}
       <div className="flex items-center gap-2 px-3 pt-3.5 pb-2">
-        <div className="grid size-8 shrink-0 place-items-center rounded-control bg-gradient-to-br from-accent to-accent/55 text-[13px] font-bold text-accent-fg shadow-sm ring-1 ring-white/15 ring-inset">
-          {mark}
+        <div className="grid size-8 shrink-0 place-items-center overflow-hidden rounded-control border border-line bg-black shadow-sm">
+          <img src="/brand/axiom-mark.png" alt="" className="size-full object-cover" />
         </div>
         <div className={cn('min-w-0 flex-1', collapsed && 'lg:hidden')}>
           <p className="truncate text-[13px] leading-tight font-semibold text-fg">
@@ -194,17 +202,36 @@ export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
 
         {/*====> Workspace Group <====*/}
         <div role="group" aria-labelledby="workspace-label" className="pt-3">
-          <p
+          <button
             id="workspace-label"
+            type="button"
+            onClick={() => {
+              setWorkspaceOpen((value) => {
+                const next = !value
+                try {
+                  window.localStorage.setItem('axiom.sidebar.workspace', next ? 'open' : 'closed')
+                } catch {
+                  /* private mode */
+                }
+                return next
+              })
+            }}
+            aria-expanded={workspaceOpen}
+            aria-controls="workspace-nav"
             className={cn(
-              'px-2.5 pb-1 text-[9.5px] font-semibold tracking-[0.16em] text-fg-subtle uppercase',
+              'flex w-full items-center justify-between gap-2 px-2.5 pb-1 text-[9.5px] font-semibold tracking-[0.16em] text-fg-subtle uppercase transition-colors hover:text-fg-muted',
               collapsed && 'lg:hidden',
             )}
           >
-            Workspace
-          </p>
+            <span>Workspace</span>
+            {workspaceOpen ? (
+              <ChevronDown className="size-3" />
+            ) : (
+              <ChevronRight className="size-3 rtl:rotate-180" />
+            )}
+          </button>
 
-          <div className="space-y-0.5">
+          <div id="workspace-nav" className={cn('space-y-0.5', !workspaceOpen && !collapsed && 'hidden')}>
             {WORKSPACE_NAV.map((entry) => (
               <SidebarLink
                 key={entry.to}
@@ -217,7 +244,7 @@ export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
           </div>
 
           {/*====> Project Quick Links <====*/}
-          <div className={cn('mt-1 space-y-0.5', collapsed && 'lg:hidden')}>
+          <div className={cn('mt-1 space-y-0.5', collapsed && 'lg:hidden', !workspaceOpen && !collapsed && 'hidden')}>
             {state.projects.map((project) => {
               const projectOpenCount = state.issues.filter(
                 (issue) => issue.projectId === project.id && issue.status !== 'done',
@@ -270,11 +297,20 @@ export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
 
       {/*=====> Footer Controls <=====*/}
       <div className="mt-auto border-t border-line p-2">
+        <Link
+          to="/settings"
+          onClick={onClose}
+          className={cn(
+            'mb-1 flex items-center gap-2 rounded-control px-2 py-1.5 text-[11.5px] text-fg-subtle transition-colors hover:bg-surface-2 hover:text-fg',
+            collapsed && 'lg:justify-center lg:px-0',
+          )}
+        >
+          <Settings2 className="size-3.5 shrink-0" />
+          <span className={cn(collapsed && 'lg:hidden')}>Settings</span>
+        </Link>
         <div className="flex items-center gap-0.5">
           <ThemePicker placement="up" />
-          <IconButton label="Personalization" onClick={openSettings}>
-            <Settings2 className="size-4" />
-          </IconButton>
+
           <IconButton
             label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             onClick={toggleSidebar}

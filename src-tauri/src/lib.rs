@@ -18,16 +18,29 @@ use tauri_plugin_global_shortcut::{
 
 use std::sync::atomic::{AtomicBool, Ordering};
 
-mod data;
+pub mod data;
+mod library_scan;
 
+use data::api::{IssueDraft, IssuePatch};
 use data::db;
 use data::models::{
-    AppState as PersistedState, LibrarySnapshot, MediaCopy, MediaItem, Volume,
+    AppState as PersistedState, Issue, LibrarySnapshot, MediaCopy, MediaItem, Note, Project, Volume,
 };
 use std::sync::Mutex;
 use tauri::State;
+use serde::Serialize;
 
 struct Db(Mutex<rusqlite::Connection>);
+
+const CORE_API_VERSION: u32 = 1;
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ProjectPayload {
+    project: Project,
+    issues: Vec<Issue>,
+    notes: Vec<Note>,
+}
 
 const MAIN_WINDOW: &str = "main";
 const CAPTURE_WINDOW: &str = "capture";
@@ -182,6 +195,121 @@ fn set_window_title(app: tauri::AppHandle, title: String) {
     }
 }
 
+#[tauri::command]
+fn sync_tray(app: tauri::AppHandle, app_name: String) -> Result<(), String> {
+    //===> Resolve The Tray <===//
+    let tray = app
+        .tray_by_id(TRAY_ID)
+        .ok_or_else(|| "tray not found".to_string())?;
+    let label = if app_name.trim().is_empty() {
+        "Axiom Core"
+    } else {
+        app_name.trim()
+    };
+
+    //===> Update Tooltip & Menu Labels <===//
+    tray.set_tooltip(Some(format!("{label} — personal workspace")))
+        .map_err(|error| error.to_string())?;
+
+    let capture = MenuItem::with_id(&app, "capture", "Quick capture", true, None::<&str>)
+        .map_err(|error| error.to_string())?;
+    let open = MenuItem::with_id(&app, "open", format!("Open {label}"), true, None::<&str>)
+        .map_err(|error| error.to_string())?;
+    let quit = MenuItem::with_id(&app, "quit", format!("Quit {label}"), true, None::<&str>)
+        .map_err(|error| error.to_string())?;
+    let menu = Menu::with_items(&app, &[&capture, &open, &quit])
+        .map_err(|error| error.to_string())?;
+
+    tray.set_menu(Some(menu)).map_err(|error| error.to_string())?;
+    Ok(())
+}
+//=====> Core API <=====//
+
+fn persisted_state(pool: &State<'_, Db>) -> Result<Option<PersistedState>, String> {
+    let connection = pool
+        .0
+        .lock()
+        .map_err(|_| "database lock poisoned".to_string())?;
+    db::load_state(&connection).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn core_api_version() -> u32 {
+    CORE_API_VERSION
+}
+
+#[tauri::command]
+fn core_snapshot(pool: State<Db>) -> Result<Option<PersistedState>, String> {
+    persisted_state(&pool)
+}
+
+#[tauri::command]
+fn core_project(pool: State<Db>, project_id: String) -> Result<Option<ProjectPayload>, String> {
+    let Some(state) = persisted_state(&pool)? else {
+        return Ok(None);
+    };
+
+    let Some(project) = state.projects.into_iter().find(|item| item.id == project_id) else {
+        return Ok(None);
+    };
+
+    let issues = state
+        .issues
+        .into_iter()
+        .filter(|issue| issue.project_id.as_deref() == Some(project_id.as_str()))
+        .collect();
+    let notes = state
+        .notes
+        .into_iter()
+        .filter(|note| note.project_id.as_deref() == Some(project_id.as_str()))
+        .collect();
+
+    Ok(Some(ProjectPayload {
+        project,
+        issues,
+        notes,
+    }))
+}
+
+#[tauri::command]
+fn core_issue(pool: State<Db>, issue_id: String) -> Result<Option<Issue>, String> {
+    let Some(state) = persisted_state(&pool)? else {
+        return Ok(None);
+    };
+
+    Ok(state.issues.into_iter().find(|issue| issue.id == issue_id))
+}
+#[tauri::command]
+fn core_issue_update(
+    pool: State<Db>,
+    issue_id: String,
+    patch: IssuePatch,
+) -> Result<Option<Issue>, String> {
+    let mut connection = pool
+        .0
+        .lock()
+        .map_err(|_| "database lock poisoned".to_string())?;
+    data::api::update_issue(&mut connection, &issue_id, &patch)
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn core_issue_create(pool: State<Db>, draft: IssueDraft) -> Result<Issue, String> {
+    let mut connection = pool
+        .0
+        .lock()
+        .map_err(|_| "database lock poisoned".to_string())?;
+    data::api::create_issue(&mut connection, &draft).map_err(|error| error.to_string())
+}
+#[tauri::command]
+fn pick_media_folder() -> Option<String> {
+    library_scan::pick_folder()
+}
+
+#[tauri::command]
+fn scan_media_folder(path: String) -> Result<Vec<library_scan::ScanCandidate>, String> {
+    library_scan::scan(&path)
+}
 //=====> Application Setup <=====//
 
 pub fn run() {
@@ -195,7 +323,16 @@ pub fn run() {
             save_media_item,
             attach_media_copy,
             upsert_volume,
-            set_window_title
+            set_window_title,
+            sync_tray,
+            core_api_version,
+            core_snapshot,
+            core_project,
+            core_issue,
+            core_issue_update,
+            core_issue_create,
+            pick_media_folder,
+            scan_media_folder
         ])
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             schedule_main_window(app);

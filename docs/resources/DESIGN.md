@@ -26,13 +26,13 @@ ordinary utilities (`bg-surface`, `text-fg-muted`, `border-line`).
 | `--fg` | `text-fg` | primary text |
 | `--fg-muted` | `text-fg-muted` | secondary text |
 | `--fg-subtle` | `text-fg-subtle` | metadata, placeholders |
-| `--accent` | `bg-accent` / `text-accent` | primary action, done, selection |
+| `--accent` | `bg-accent` / `text-accent` | links, active states, done, selection |`n| `--accent-strong` | `bg-accent-strong` | filled primary buttons (paired with `--accent-fg`) |
 | `--accent-soft` | `bg-accent-soft` | selected pills, tints |
 | `--accent-fg` | `text-accent-fg` | text on accent |
 | `--ok`, `--warn`, `--danger`, `--info` | `text-ok` … | status semantics |
 | `--ok-soft`, `--warn-soft`, `--danger-soft` | `bg-warn-soft` … | status backgrounds |
 
-Status colours are semantic, not decorative: amber means in-progress, violet/accent means done,
+Status colours are semantic, not decorative: amber means in-progress, the accent means done,
 rose means overdue/urgent. Keep that mapping when re-theming.
 
 ### Type
@@ -53,15 +53,15 @@ Type scale in use: 10–11 px metadata, 12–13 px UI, 20–27 px headings, 30�
 | `--radius-control` | `rounded-control` | buttons, inputs, menu rows |
 | `--shadow-sm/md/lg` | `shadow-sm` … | floating layers only |
 
-Radii are per-theme: Axiom is 12/8 px, Paper 6/4 px, Graphite 8/6 px.
+Radii are per-theme: Classic 12/8 px, Paper 6/4 px, Terminal 3/2 px.
 
 ## 2. Themes
 
 | Theme | Mode | Character | Display font | Radii |
 | --- | --- | --- | --- | --- |
-| **Axiom** (default) | dark | violet on near-black, current app | Inter | 12 / 8 |
+| **Classic** (default) | dark | crimson on near-black, the original interface | Inter | 12 / 8 |
 | **Paper** | light | warm paper, rust accent, editorial | Georgia serif | 6 / 4 |
-| **Graphite** | dark | neutral, cyan accent, tighter | Inter | 8 / 6 |
+| **Terminal** | dark | phosphor green, monospace, square, faint scanline | JetBrains Mono | 3 / 2 |
 
 Switching: palette icon in the sidebar footer or top bar, or `⌘K` → *Theme*. The choice is part
 of `AppState` and is persisted to SQLite (`meta.theme`) and localStorage.
@@ -83,7 +83,7 @@ of `AppState` and is persisted to SQLite (`meta.theme`) and localStorage.
 3. Nothing else: the picker, command palette, first-paint script and persistence read from that
    list.
 
-Legacy values `dark` / `light` are mapped to `axiom` / `paper` on load, so old saves keep working.
+Legacy values `dark`, `orbit`, `axiom` and `graphite` map to `classic`; `light` maps to `paper`, so old saves keep working.`n`nThemes are switched from **Settings → Appearance**, which also owns the background layer: grid, dots,`nglow or image, 0–40 % opacity, applied to the window or the content column and blended into the`ncanvas with `color-mix` / `soft-light`.
 
 ## 3. Components
 
@@ -137,8 +137,7 @@ Rules of thumb:
 
 ## 5. Explorations
 
-`design/paper.html` and `design/terminal.html` are static mockups of two directions that are
-*not* shipped as themes. They exist to compare density, type and colour before committing to a
-direction; the rendered images live in `docs/style-paper.png` and `docs/style-terminal.png`.
-The Paper theme in the app borrows its palette and serif display from that exploration; the
-terminal direction is intentionally not a theme yet.
+`design/paper.html` and `design/terminal.html` are static mockups of two directions. They exist to
+compare density, type and colour; the rendered images live in `docs/style-paper.png` and
+`docs/style-terminal.png`. Both directions have since become themes: **Paper** borrows the palette
+and serif display, **Terminal** turns the monospace, phosphor and square-edge language into tokens.

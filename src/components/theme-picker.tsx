@@ -59,8 +59,8 @@ export function ThemePicker({
           role="menu"
           aria-label="Theme"
           className={cn(
-            'absolute z-40 w-60 overflow-hidden rounded-card border border-line bg-surface p-1 shadow-lg',
-            placement === 'up' ? 'bottom-full start-0 mb-2' : 'top-full start-0 mt-2',
+            'absolute z-40 w-60 max-w-[calc(100vw-1rem)] overflow-hidden rounded-card border border-line bg-surface p-1 shadow-lg',
+            placement === 'up' ? 'bottom-full start-0 mb-2' : 'top-full end-0 mt-2',
           )}
         >
           {THEMES.map((theme) => {

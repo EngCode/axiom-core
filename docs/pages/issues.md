@@ -27,7 +27,7 @@ you are currently looking at. Filter state other than project lives in memory an
 
 ## Groups
 
-- Fixed order: Backlog, Todo, In progress, Done.
+- Fixed group order: Backlog, Todo, In progress, Done.`n- Grab the grip handle on row hover to reorder inside a group; dropping on a row in another group`n  adopts that status.`n- The listing is the shared `IssueList` component, also used by the project detail Issues tab.
 - Each group shows a status icon, label, count, a one-line hint and a `+` that creates a task
   directly in that status (and current project).
 - Empty groups disappear; the page shows one empty state when nothing matches.
@@ -63,7 +63,7 @@ circles complete.
 
 ## Known gaps
 
-- No sorting (priority / due date), grouping switch, or manual order.
+- No automatic sorting (priority / due date) or grouping switch; order is manual and persisted.
 - No bulk selection, multi-select or saved views.
 - Filter state is not persisted across reloads.
 - No sub-tasks or dependencies.

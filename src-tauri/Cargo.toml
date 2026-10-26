@@ -25,6 +25,7 @@ tauri-plugin-single-instance = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 rusqlite = { version = "0.41.0", features = ["bundled"] }
+rfd = "0.15"
 
 [profile.dev.package.libsqlite3-sys]
 # cl.exe chokes on /Z7 for the bundled SQLite C file in some environments.

@@ -1,8 +1,8 @@
 <!doctype html>
-<html lang="en" dir="ltr" class="dark" data-theme="axiom">
+<html lang="en" dir="ltr" class="dark" data-theme="classic">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="/brand/favicon-64.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="A personal workspace for tasks, projects and notes." />
     <title>Axiom Core — Personal Workspace</title>
@@ -16,10 +16,10 @@
       // Apply the saved theme before first paint to avoid a flash.
       try {
         var stored = localStorage.getItem('axiom.state.v1') || localStorage.getItem('orbit.state.v1')
-        var value = stored ? JSON.parse(stored).theme : 'axiom'
-        if (value === 'dark' || value === 'orbit') value = 'axiom'
+        var value = stored ? JSON.parse(stored).theme : 'classic'
+        if (value === 'dark' || value === 'orbit' || value === 'axiom' || value === 'graphite') value = 'classic'
         if (value === 'light') value = 'paper'
-        if (value !== 'axiom' && value !== 'paper' && value !== 'graphite') value = 'axiom'
+        if (value !== 'classic' && value !== 'paper' && value !== 'terminal') value = 'classic'
         document.documentElement.dataset.theme = value
         document.documentElement.classList.toggle('dark', value !== 'paper')
       } catch (_) {}

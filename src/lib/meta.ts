@@ -10,7 +10,7 @@ export const STATUS_META: Record<Status, { label: string; tone: string; hint: st
   backlog: { label: 'Backlog', tone: 'text-fg-subtle', hint: 'Someday / not scheduled' },
   todo: { label: 'Todo', tone: 'text-fg-muted', hint: 'Ready to pick up' },
   in_progress: { label: 'In progress', tone: 'text-amber-500 dark:text-amber-400', hint: 'Being worked on now' },
-  done: { label: 'Done', tone: 'text-violet-500 dark:text-violet-400', hint: 'Completed' },
+  done: { label: 'Done', tone: 'text-accent', hint: 'Completed' },
 }
 
 export const PRIORITY_ORDER: Priority[] = ['urgent', 'high', 'medium', 'low', 'none']

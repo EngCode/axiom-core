@@ -28,7 +28,7 @@ A frameless one-line window for getting a task out of your head without opening 
 | Status | `todo` |
 | Due date | today |
 | Priority | none (default) |
-| Project | none |
+| Project | selected project, or none (Inbox) |
 
 The task is written through the same store as the main window, so it lands in SQLite after the
 usual 400 ms debounce.
@@ -46,7 +46,7 @@ one of these actions.
 
 ## Known gaps
 
-- No project, priority, due-date or note capture — it is deliberately one line.
+- No priority, due-date or note capture — it stays one line plus the project picker.
 - No confirmation feedback inside the window; it closes after 220 ms.
 - No settings UI for changing or disabling the shortcut.
 - The shortcut path itself has not been exercised by automation in this environment (Windows

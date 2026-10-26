@@ -3,6 +3,8 @@
  * ===> 02 - Resolution & Cycling
  */
 
+//=====> Theme Registry <=====//
+
 export interface ThemeDefinition {
   id: ThemeId
   name: string
@@ -12,15 +14,15 @@ export interface ThemeDefinition {
   swatch: [string, string, string]
 }
 
-export type ThemeId = 'axiom' | 'paper' | 'graphite'
+export type ThemeId = 'classic' | 'paper' | 'terminal'
 
 export const THEMES: ThemeDefinition[] = [
   {
-    id: 'axiom',
-    name: 'Axiom',
-    description: 'Violet on near-black. The default.',
+    id: 'classic',
+    name: 'Classic',
+    description: 'Crimson on near-black. The original interface.',
     mode: 'dark',
-    swatch: ['#07080a', '#8b86ff', '#edeef3'],
+    swatch: ['#07080a', '#f5253f', '#edeef3'],
   },
   {
     id: 'paper',
@@ -30,25 +32,36 @@ export const THEMES: ThemeDefinition[] = [
     swatch: ['#f4eee3', '#a5482c', '#211d18'],
   },
   {
-    id: 'graphite',
-    name: 'Graphite',
-    description: 'Neutral dark, cyan accent, tighter radii.',
+    id: 'terminal',
+    name: 'Terminal',
+    description: 'Phosphor green, monospace, square edges.',
     mode: 'dark',
-    swatch: ['#0a0b0c', '#5fd4d0', '#e6e8ea'],
+    swatch: ['#050806', '#4ff08a', '#d8f7de'],
   },
 ]
 
-export const DEFAULT_THEME: ThemeId = 'axiom'
+export const DEFAULT_THEME: ThemeId = 'classic'
+
+//=====> Resolution & Cycling <=====//
 
 export function isThemeId(value: unknown): value is ThemeId {
   return typeof value === 'string' && THEMES.some((theme) => theme.id === value)
 }
 
-/** Accepts legacy `dark` / `light` values from earlier builds. */
+/** Accepts legacy ids from earlier builds (dark, light, orbit, axiom, graphite). */
 export function normalizeTheme(value: unknown): ThemeId {
-  if (value === 'dark' || value === 'orbit') return 'axiom'
+  if (value === 'dark' || value === 'orbit' || value === 'axiom' || value === 'graphite') {
+    return 'classic'
+  }
   if (value === 'light') return 'paper'
   return isThemeId(value) ? value : DEFAULT_THEME
+}
+
+/** `?theme=terminal` previews a theme without touching the picker. */
+export function previewThemeFromUrl(): ThemeId | null {
+  if (typeof window === 'undefined') return null
+  const value = new URLSearchParams(window.location.search).get('theme')
+  return isThemeId(value) ? value : null
 }
 
 export function themeMeta(id: ThemeId): ThemeDefinition {

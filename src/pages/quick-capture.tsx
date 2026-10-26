@@ -27,6 +27,7 @@ function QuickCapture() {
   const { addIssue, state } = useApp()
   const [title, setTitle] = useState('')
   const [saved, setSaved] = useState(false)
+  const [projectId, setProjectId] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -70,7 +71,12 @@ function QuickCapture() {
     event.preventDefault()
     const value = title.trim()
     if (!value) return
-    addIssue({ title: value, status: 'todo', dueDate: localISODate() })
+    addIssue({
+      title: value,
+      status: 'todo',
+      dueDate: localISODate(),
+      projectId: projectId || null,
+    })
     setSaved(true)
     window.setTimeout(() => {
       void closeCaptureWindow()
@@ -95,6 +101,21 @@ function QuickCapture() {
           aria-label="Capture a task"
           className="h-6 min-w-0 flex-1 bg-transparent text-[14px] text-fg outline-none placeholder:text-fg-subtle"
         />
+        <select
+          value={projectId}
+          onChange={(event) => setProjectId(event.target.value)}
+          aria-label="Project"
+          className="h-6 max-w-[128px] shrink-0 rounded border border-line bg-surface px-1.5 text-[10.5px] text-fg-muted outline-none focus:border-accent/50"
+        >
+          <option value="">Inbox</option>
+          {state.projects
+            .filter((project) => project.status !== 'done')
+            .map((project) => (
+              <option key={project.id} value={project.id}>
+                {project.name}
+              </option>
+            ))}
+        </select>
         <kbd className="inline-flex h-5 min-w-[22px] items-center justify-center rounded border border-line bg-surface px-1 font-mono text-[10px] text-fg-subtle">
           ↵
         </kbd>

@@ -1,34 +1,44 @@
 # Library
 
-**Route:** `/library` · **Status:** data layer shipped, screen **planned** ·
+**Route:** `/library` · **Status:** scan/import MVP shipped ·
 **Source:** [`src/pages/library.tsx`](../../src/pages/library.tsx) ·
-**Feature doc:** [media-library.md](../features/media-library.md)
+**Feature doc:** [media-library.md](../features/media-library.md) ·
+**Spec:** [LIBRARY.md](../resources/LIBRARY.md)
 
-The Library is the "do I already have this?" answer for games, movies, series, anime, books and
-music. Today the page is a status surface: it shows the seeded kinds and what is already persisted.
+![Library page](../preview-library.png)
 
-## What exists today
+The Library indexes media you already own so you never download it twice. The first milestone —
+folder scan, review and import — is implemented.
 
-- Route and sidebar entry.
-- Six seeded kinds (movies, series, anime, games, books, music) rendered as a static overview.
-- Links to the full [library specification](../resources/LIBRARY.md).
-- No browsing, scanning, metadata or actions.
+## Scan flow
 
-## What is already underneath
+1. **Scan folder** opens the native folder picker (`rfd`).
+2. Rust walks the folder recursively (5,000-file budget), classifies by extension and returns
+   candidates with `relPath`, size, kind and volume root.
+3. The page shows a review list; select all or individual files.
+4. **Import** creates a `MediaItem`, a `MediaCopy` and, if needed, a `Volume`.
+5. Refresh reloads the library snapshot.
 
-The SQLite schema, Rust commands and typed frontend client exist; see
-[media-library.md](../features/media-library.md). Nothing on this page reads the database yet.
+### Classification
 
-## Planned
-
-| Milestone | Scope |
+| Extensions | Kind |
 | --- | --- |
-| M1 | kind navigation, item grid/table, volumes, wishlist, search, detail |
-| M2 | volume detection and folder scanning |
-| M3 | TMDB/IGDB metadata with a local cache |
+| `mkv`, `mp4`, `avi`, `mov`, `m4v`, `webm`, `wmv` | `series` when the name matches `SxxExx`, otherwise `movies` |
+| `epub`, `pdf`, `cbz`, `cbr`, `mobi` | `books` |
+| `mp3`, `flac`, `m4a`, `wav`, `ogg` | `music` |
 
-## Why this page is intentionally empty
+## Storage
 
-Building a browsing UI before the scanner and metadata models settle would produce screens that get
-rebuilt. The structure is in place, the data layer is ready, and the feature is explicitly marked as
-planned in the interface rather than faked with dead controls.
+- Volume-relative paths (`relPath`); the drive letter is not part of a copy.
+- Volume root and label are recorded so a drive can be matched again.
+- Library tables are separate from the workspace snapshot; `load_library`, `save_media_item`,
+  `attach_media_copy` and `upsert_volume` own them.
+- A scanner unit test covers recursive scan and classification.
+
+## Limitations
+
+- No GUID/serial volume identity yet; the mount path/label identify a volume.
+- No metadata provider (TMDB/IGDB), covers or progress editing.
+- Games are not scanned yet; executable detection needs a safer rule.
+- Duplicate detection is by `volumeId + relPath`, not content hash.
+- No progress/status editing UI beyond the imported `acquired` state.

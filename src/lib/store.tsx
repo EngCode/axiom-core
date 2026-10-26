@@ -18,13 +18,19 @@ import {
 
 import { APP_VERSION, LEGACY_STORAGE_KEY, STORAGE_KEY, createSeedState } from './data'
 import { loadStateFromDisk, saveStateToDisk } from './db'
+import { normalizeAppearance, normalizeBackground, previewBackgroundFromUrl } from './appearance'
 import { normalizeIdentity } from './identity'
-import { normalizeTheme, themeMeta } from './themes'
+import { normalizeTheme, previewThemeFromUrl, themeMeta } from './themes'
+import { invoke } from '@tauri-apps/api/core'
 import { setWindowTitle } from './window'
 import { isTauri } from './tauri'
 import type {
   AppState,
+  BackgroundSettings,
+  DocumentRecord,
+  Milestone,
   Identity,
+  ProjectDeleteOptions,
   Issue,
   IssueInput,
   Note,
@@ -47,11 +53,24 @@ type Action =
   | { type: 'note/remove'; id: string }
   | { type: 'project/add'; project: Project }
   | { type: 'project/update'; id: string; patch: Partial<Project> }
+  | { type: 'project/delete'; id: string; options: ProjectDeleteOptions }
+  | { type: 'project/reorder'; id: string; beforeId: string | null }
+  | { type: 'issue/reorder'; id: string; beforeId: string | null; status?: Status }
   | { type: 'theme/set'; theme: Theme }
   | { type: 'sidebar/toggle' }
   | { type: 'state/reset' }
   | { type: 'state/replace'; state: AppState }
   | { type: 'identity/update'; patch: Partial<Identity> }
+  | { type: 'appearance/background'; patch: Partial<BackgroundSettings> }
+  | { type: 'appearance/pageBackground'; path: string; patch: Partial<BackgroundSettings> | null }
+  | { type: 'document/add'; document: DocumentRecord }
+  | { type: 'document/update'; id: string; patch: Partial<DocumentRecord> }
+  | { type: 'document/delete'; id: string }
+  | { type: 'document/pin'; id: string }
+  | { type: 'milestone/add'; milestone: Milestone }
+  | { type: 'milestone/update'; id: string; patch: Partial<Milestone> }
+  | { type: 'milestone/delete'; id: string }
+  | { type: 'milestone/toggle'; id: string }
 
 function withActivity(
   state: AppState,
@@ -64,6 +83,21 @@ function withActivity(
 
 //=====> Reducer <=====//
 
+function moveBefore<T extends { id: string }>(items: T[], id: string, beforeId: string | null): T[] {
+  //===> Guard Clause: Nothing To Move <===//
+  const current = items.findIndex((item) => item.id === id)
+  if (current < 0) return items
+
+  //===> Detach & Reinsert <===//
+  const moved = items[current]
+  const rest = items.filter((item) => item.id !== id)
+  if (!beforeId) return [...rest, moved]
+
+  const target = rest.findIndex((item) => item.id === beforeId)
+  if (target < 0) return [...rest, moved]
+
+  return [...rest.slice(0, target), moved, ...rest.slice(target)]
+}
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case 'issue/add': {
@@ -161,6 +195,125 @@ function reducer(state: AppState, action: Action): AppState {
       }
     }
 
+    case 'project/delete': {
+      const project = state.projects.find((candidate) => candidate.id === action.id)
+      if (!project) return state
+
+      const cascade = action.options.mode === 'delete'
+      const target = action.options.mode === 'move' ? (action.options.targetProjectId ?? null) : null
+
+      return withActivity(
+        {
+          ...state,
+          projects: state.projects.filter((candidate) => candidate.id !== action.id),
+          issues: cascade
+            ? state.issues.filter((issue) => issue.projectId !== action.id)
+            : state.issues.map((issue) =>
+                issue.projectId === action.id ? { ...issue, projectId: target } : issue,
+              ),
+          notes: cascade
+            ? state.notes.filter((note) => note.projectId !== action.id)
+            : state.notes.map((note) =>
+                note.projectId === action.id ? { ...note, projectId: target } : note,
+              ),
+        },
+        `Deleted project · ${project.name}`,
+        'project',
+      )
+    }
+
+    case 'project/reorder': {
+      return { ...state, projects: moveBefore(state.projects, action.id, action.beforeId) }
+    }
+
+    case 'issue/reorder': {
+      const issue = state.issues.find((candidate) => candidate.id === action.id)
+      if (!issue) return state
+
+      const nextStatus = action.status ?? issue.status
+      const moved = moveBefore(state.issues, action.id, action.beforeId).map((candidate) =>
+        candidate.id === action.id
+          ? {
+              ...candidate,
+              status: nextStatus,
+              updatedAt:
+                nextStatus === issue.status ? candidate.updatedAt : new Date().toISOString(),
+            }
+          : candidate,
+      )
+
+      return { ...state, issues: moved }
+    }
+
+    case 'appearance/pageBackground': {
+      const pages = { ...state.appearance.pageBackgrounds }
+      if (action.patch === null) {
+        delete pages[action.path]
+      } else {
+        pages[action.path] = normalizeBackground({
+          ...state.appearance.background,
+          ...pages[action.path],
+          ...action.patch,
+        })
+      }
+
+      return {
+        ...state,
+        appearance: normalizeAppearance({ ...state.appearance, pageBackgrounds: pages }),
+      }
+    }
+    case 'document/add':
+      return { ...state, documents: [action.document, ...state.documents] }
+
+    case 'document/update':
+      return {
+        ...state,
+        documents: state.documents.map((document) =>
+          document.id === action.id
+            ? { ...document, ...action.patch, updatedAt: new Date().toISOString() }
+            : document,
+        ),
+      }
+
+    case 'document/delete':
+      return { ...state, documents: state.documents.filter((document) => document.id !== action.id) }
+
+    case 'document/pin':
+      return {
+        ...state,
+        documents: state.documents.map((document) =>
+          document.id === action.id
+            ? { ...document, pinned: !document.pinned, updatedAt: new Date().toISOString() }
+            : document,
+        ),
+      }
+
+    case 'milestone/add':
+      return { ...state, milestones: [action.milestone, ...state.milestones] }
+
+    case 'milestone/update':
+      return {
+        ...state,
+        milestones: state.milestones.map((milestone) =>
+          milestone.id === action.id ? { ...milestone, ...action.patch } : milestone,
+        ),
+      }
+
+    case 'milestone/delete':
+      return {
+        ...state,
+        milestones: state.milestones.filter((milestone) => milestone.id !== action.id),
+      }
+
+    case 'milestone/toggle':
+      return {
+        ...state,
+        milestones: state.milestones.map((milestone) =>
+          milestone.id === action.id
+            ? { ...milestone, status: milestone.status === 'done' ? 'open' : 'done' }
+            : milestone,
+        ),
+      }
     case 'theme/set':
       return { ...state, theme: action.theme }
 
@@ -176,6 +329,13 @@ function reducer(state: AppState, action: Action): AppState {
     case 'identity/update':
       return { ...state, identity: normalizeIdentity({ ...state.identity, ...action.patch }) }
 
+    case 'appearance/background':
+      return {
+        ...state,
+        appearance: normalizeAppearance({
+          background: { ...state.appearance.background, ...action.patch },
+        }),
+      }
     default:
       return state
   }
@@ -183,31 +343,51 @@ function reducer(state: AppState, action: Action): AppState {
 
 //=====> Persistence Helpers <=====//
 
+function withPreviewOverrides(state: AppState): AppState {
+  const theme = previewThemeFromUrl()
+  const background = previewBackgroundFromUrl()
+
+  //===> Guard Clause: Nothing To Preview <===//
+  if (!theme && !background) return state
+
+  //===> Apply Preview Overrides <===//
+  return {
+    ...state,
+    theme: theme ?? state.theme,
+    appearance: background
+      ? normalizeAppearance({ background: { ...state.appearance.background, ...background } })
+      : state.appearance,
+  }
+}
+
 function loadState(fresh = false): AppState {
   const seed = createSeedState()
-  if (fresh || typeof window === 'undefined') return seed
+  if (fresh || typeof window === 'undefined') return withPreviewOverrides(seed)
+
   try {
     const raw =
       window.localStorage.getItem(STORAGE_KEY) ?? window.localStorage.getItem(LEGACY_STORAGE_KEY)
-    if (!raw) return seed
+    if (!raw) return withPreviewOverrides(seed)
+
     const parsed = JSON.parse(raw) as Partial<AppState>
-    if (!parsed || parsed.version !== APP_VERSION) return seed
-    return {
+    if (!parsed || parsed.version !== APP_VERSION) return withPreviewOverrides(seed)
+
+    return withPreviewOverrides({
       ...seed,
       ...parsed,
       theme: normalizeTheme(parsed.theme),
       identity: normalizeIdentity(parsed.identity),
+      appearance: normalizeAppearance(parsed.appearance),
       projects: Array.isArray(parsed.projects) ? parsed.projects : seed.projects,
       issues: Array.isArray(parsed.issues) ? parsed.issues : seed.issues,
       notes: Array.isArray(parsed.notes) ? parsed.notes : seed.notes,
       activity: Array.isArray(parsed.activity) ? parsed.activity : seed.activity,
       counters: parsed.counters ?? seed.counters,
-    }
+    })
   } catch {
-    return seed
+    return withPreviewOverrides(seed)
   }
 }
-
 //=====> Context & Provider <=====//
 
 interface AppContextValue {
@@ -221,9 +401,26 @@ interface AppContextValue {
   updateNote: (id: string, patch: Partial<Note>) => void
   deleteNote: (id: string) => void
   toggleNotePin: (id: string) => void
+  addDocument: (input?: { title?: string; projectId?: string | null }) => string
+  updateDocument: (id: string, patch: Partial<DocumentRecord>) => void
+  deleteDocument: (id: string) => void
+  toggleDocumentPin: (id: string) => void
+  addMilestone: (input: {
+    projectId: string
+    title: string
+    dueDate?: string | null
+  }) => string
+  updateMilestone: (id: string, patch: Partial<Milestone>) => void
+  deleteMilestone: (id: string) => void
+  toggleMilestone: (id: string) => void
   addProject: (input: ProjectInput) => void
   updateProject: (id: string, patch: Partial<Project>) => void
+  deleteProject: (id: string, options: ProjectDeleteOptions) => void
+  reorderProjects: (id: string, beforeId: string | null) => void
+  reorderIssues: (id: string, beforeId: string | null, status?: Status) => void
   updateIdentity: (patch: Partial<Identity>) => void
+  updateBackground: (patch: Partial<BackgroundSettings>) => void
+  updatePageBackground: (path: string, patch: Partial<BackgroundSettings> | null) => void
   setTheme: (theme: Theme) => void
   toggleSidebar: () => void
   resetData: () => void
@@ -263,6 +460,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             ...persisted,
             theme: normalizeTheme(persisted.theme),
             identity: normalizeIdentity(persisted.identity),
+            appearance: normalizeAppearance(persisted.appearance),
           },
         })
       }
@@ -286,6 +484,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
               ...next,
               theme: normalizeTheme(next.theme),
               identity: normalizeIdentity(next.identity),
+              appearance: normalizeAppearance(next.appearance),
             },
           })
         }
@@ -308,6 +507,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const { appName, workspaceName } = state.identity
     document.title = `${appName} — ${workspaceName} workspace`
     void setWindowTitle(appName)
+    if (isTauri()) {
+      void invoke('sync_tray', { appName }).catch(() => {
+        /* the tray may not exist in browser mode */
+      })
+    }
   }, [state.identity])
 
   const addIssue = useCallback((input: IssueInput) => {
@@ -393,6 +597,71 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [state.notes],
   )
 
+  const addDocument = useCallback(
+    (input?: { title?: string; projectId?: string | null }) => {
+      const id = uid()
+      const now = new Date().toISOString()
+      dispatch({
+        type: 'document/add',
+        document: {
+          id,
+          title: input?.title ?? 'Untitled document',
+          content: '',
+          projectId: input?.projectId ?? null,
+          pinned: false,
+          createdAt: now,
+          updatedAt: now,
+        },
+      })
+      return id
+    },
+    [],
+  )
+
+  const updateDocument = useCallback((id: string, patch: Partial<DocumentRecord>) => {
+    dispatch({ type: 'document/update', id, patch })
+  }, [])
+
+  const deleteDocument = useCallback((id: string) => {
+    dispatch({ type: 'document/delete', id })
+  }, [])
+
+  const toggleDocumentPin = useCallback((id: string) => {
+    dispatch({ type: 'document/pin', id })
+  }, [])
+
+  const addMilestone = useCallback(
+    (input: { projectId: string; title: string; dueDate?: string | null }) => {
+      const id = uid()
+      dispatch({
+        type: 'milestone/add',
+        milestone: {
+          id,
+          projectId: input.projectId,
+          title: input.title.trim() || 'Untitled milestone',
+          description: '',
+          dueDate: input.dueDate ?? null,
+          status: 'open',
+          issueIds: [],
+          createdAt: new Date().toISOString(),
+        },
+      })
+      return id
+    },
+    [],
+  )
+
+  const updateMilestone = useCallback((id: string, patch: Partial<Milestone>) => {
+    dispatch({ type: 'milestone/update', id, patch })
+  }, [])
+
+  const deleteMilestone = useCallback((id: string) => {
+    dispatch({ type: 'milestone/delete', id })
+  }, [])
+
+  const toggleMilestone = useCallback((id: string) => {
+    dispatch({ type: 'milestone/toggle', id })
+  }, [])
   const addProject = useCallback((input: ProjectInput) => {
     const now = new Date().toISOString()
     dispatch({
@@ -422,8 +691,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'sidebar/toggle' })
   }, [])
 
+  const deleteProject = useCallback((id: string, options: ProjectDeleteOptions) => {
+    dispatch({ type: 'project/delete', id, options })
+  }, [])
+
+  const reorderProjects = useCallback((id: string, beforeId: string | null) => {
+    dispatch({ type: 'project/reorder', id, beforeId })
+  }, [])
+
+  const reorderIssues = useCallback((id: string, beforeId: string | null, status?: Status) => {
+    dispatch({ type: 'issue/reorder', id, beforeId, status })
+  }, [])
+  const updatePageBackground = useCallback(
+    (path: string, patch: Partial<BackgroundSettings> | null) => {
+      dispatch({ type: 'appearance/pageBackground', path, patch })
+    },
+    [],
+  )
   const updateIdentity = useCallback((patch: Partial<Identity>) => {
     dispatch({ type: 'identity/update', patch })
+  }, [])
+
+  const updateBackground = useCallback((patch: Partial<BackgroundSettings>) => {
+    dispatch({ type: 'appearance/background', patch })
   }, [])
 
   const resetData = useCallback(() => {
@@ -442,9 +732,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
       updateNote,
       deleteNote,
       toggleNotePin,
+      addDocument,
+      updateDocument,
+      deleteDocument,
+      toggleDocumentPin,
+      addMilestone,
+      updateMilestone,
+      deleteMilestone,
+      toggleMilestone,
       addProject,
       updateProject,
+      deleteProject,
+      reorderProjects,
+      reorderIssues,
       updateIdentity,
+      updateBackground,
+      updatePageBackground,
       setTheme,
       toggleSidebar,
       resetData,
@@ -460,9 +763,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
       updateNote,
       deleteNote,
       toggleNotePin,
+      addDocument,
+      updateDocument,
+      deleteDocument,
+      toggleDocumentPin,
+      addMilestone,
+      updateMilestone,
+      deleteMilestone,
+      toggleMilestone,
       addProject,
       updateProject,
+      deleteProject,
+      reorderProjects,
+      reorderIssues,
       updateIdentity,
+      updateBackground,
+      updatePageBackground,
       setTheme,
       toggleSidebar,
       resetData,

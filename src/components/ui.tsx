@@ -8,6 +8,7 @@
 
 import type {
   ButtonHTMLAttributes,
+  HTMLAttributes,
   InputHTMLAttributes,
   ReactNode,
   SelectHTMLAttributes,
@@ -25,7 +26,7 @@ type ButtonSize = 'sm' | 'md'
 
 const buttonVariants: Record<ButtonVariant, string> = {
   primary:
-    'bg-accent text-accent-fg shadow-sm hover:brightness-110 active:brightness-95',
+    'bg-accent-strong text-accent-fg shadow-sm hover:brightness-110 active:brightness-95',
   secondary:
     'border border-line bg-surface-2 text-fg hover:border-line-strong hover:bg-surface-3',
   ghost: 'text-fg-muted hover:bg-surface-2 hover:text-fg',
@@ -147,9 +148,9 @@ export function Field({
 
 //=====> Surfaces & Feedback <=====//
 
-export function Card({ className, children }: { className?: string; children: ReactNode }) {
+export function Card({ className, children, ...props }: HTMLAttributes<HTMLElement>) {
   return (
-    <section className={cn('rounded-card border border-line bg-surface', className)}>{children}</section>
+    <section {...props} className={cn('rounded-card border border-line bg-surface', className)}>{children}</section>
   )
 }
 

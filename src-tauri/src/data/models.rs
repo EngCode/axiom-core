@@ -4,7 +4,34 @@
  * ===> 03 - Library Models
  */
 
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DocumentRecord {
+    pub id: String,
+    pub title: String,
+    pub content: String,
+    pub project_id: Option<String>,
+    pub pinned: bool,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Milestone {
+    pub id: String,
+    pub project_id: String,
+    pub title: String,
+    pub description: String,
+    pub due_date: Option<String>,
+    pub status: String,
+    pub issue_ids: Vec<String>,
+    pub created_at: String,
+}
 
 /// A snapshot of the workspace exactly as the frontend holds it.
 /// Field names are camelCase so the JSON crosses the Tauri boundary unchanged.
@@ -14,11 +41,17 @@ pub struct AppState {
     pub version: u32,
     #[serde(default)]
     pub identity: Identity,
+    #[serde(default)]
+    pub appearance: Appearance,
     pub theme: String,
     pub sidebar_collapsed: bool,
     pub projects: Vec<Project>,
     pub issues: Vec<Issue>,
     pub notes: Vec<Note>,
+    #[serde(default)]
+    pub documents: Vec<DocumentRecord>,
+    #[serde(default)]
+    pub milestones: Vec<Milestone>,
     pub activity: Vec<ActivityEntry>,
     #[serde(default)]
     pub counters: Counters,
@@ -178,4 +211,32 @@ impl Default for Identity {
             owner_name: "Abdullah".to_string(),
         }
     }
+}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BackgroundSettings {
+    pub kind: String,
+    pub image_url: String,
+    pub opacity: f64,
+    pub scope: String,
+}
+
+impl Default for BackgroundSettings {
+    fn default() -> Self {
+        Self {
+            kind: "none".to_string(),
+            image_url: String::new(),
+            opacity: 0.18,
+            scope: "window".to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct Appearance {
+    #[serde(default)]
+    pub background: BackgroundSettings,
+    #[serde(default)]
+    pub page_backgrounds: HashMap<String, BackgroundSettings>,
 }

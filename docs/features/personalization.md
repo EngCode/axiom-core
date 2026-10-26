@@ -1,9 +1,11 @@
 # Personalization
 
-**Status:** shipped · **Entry points:** sidebar gear (bottom rail) and
-`⌘K` → **Personalization** · **Sources:** [`src/lib/identity.ts`](../../src/lib/identity.ts),
-[`src/components/settings-dialog.tsx`](../../src/components/settings-dialog.tsx),
-[`src/lib/store.tsx`](../../src/lib/store.tsx)
+**Status:** shipped · **Entry points:** **Settings → Profile** — sidebar footer, top-bar avatar,
+`⌘K` → **Settings**, or Tools → Settings ·
+**Sources:** [`src/lib/identity.ts`](../../src/lib/identity.ts),
+[`src/pages/settings.tsx`](../../src/pages/settings.tsx),
+[`src/lib/store.tsx`](../../src/lib/store.tsx) ·
+**See also:** [settings.md](../pages/settings.md)
 
 The app name, workspace name and owner are **data, not constants**. They ship with defaults and can
 be changed at any time without touching code.
@@ -16,15 +18,17 @@ be changed at any time without touching code.
 | Workspace name | `Personal` | sidebar subtitle, top bar breadcrumb, app footer |
 | Owner name | `Abdullah` | dashboard greeting, sidebar subtitle, avatar initials |
 
-The sidebar mark uses the app name's initials (`Axiom Core` → `AC`). Empty fields fall back to the
-defaults on save, so the app can never end up with a blank name.
+The sidebar mark is the Axiom Core logo, shipped as a fixed brand asset: the app name changes the
+label, not the mark. Empty fields fall back to the defaults on save, so the app can never end up
+with a blank name.
 
 ## Behaviour
 
-- Changes apply immediately after **Save changes**: sidebar, greeting, window title, document
+- Changes apply immediately after **Save profile**: sidebar, greeting, window title, document
   title, quick-capture labels.
-- **Reset fields** restores the defaults in the form; **Save** applies them.
-- Cancel discards the draft.
+- **Reset fields** restores the defaults in the form; **Save profile** applies them.
+- Leaving the page discards the draft; there is no cancel button because nothing is applied until
+  save.
 - The native window title is updated through the `set_window_title` Rust command; the tray tooltip
   and tray menu labels are fixed at build time and would need a restart/new build to change.
 
@@ -35,8 +39,7 @@ Identity is part of `AppState` and therefore flows through the normal persistenc
 - localStorage: inside `axiom.state.v1`
 - SQLite: `meta` rows `identity.appName`, `identity.workspaceName`, `identity.ownerName`
 
-It survives restarts, theme changes and **Reset demo data** — except that reset restores the seed
-state, which includes the default identity.
+It survives restarts and theme changes; **Reset demo data** restores the seed identity.
 
 ## Changing the shipped defaults
 
@@ -56,6 +59,7 @@ The desktop product name (`Axiom Core`), executable name (`axiom-core.exe`) and 
 
 ## Known gaps
 
-- No avatar image, accent colour or per-workspace branding yet.
-- Tray labels, installer metadata and file paths are not runtime-editable.
+- No avatar image or per-workspace branding yet.
+- Appearance is app-wide (theme + background), not per workspace.
+- Installer metadata and file paths are not runtime-editable.
 - No multiple workspaces, so identity is global to the app.

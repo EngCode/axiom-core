@@ -3,8 +3,9 @@
  * ===> 02 - Seed Data
  */
 
+import { DEFAULT_APPEARANCE } from './appearance'
 import { DEFAULT_IDENTITY } from './identity'
-import type { AppState, Issue, Note, Project } from './types'
+import type { AppState, DocumentRecord, Issue, Milestone, Note, Project } from './types'
 import { addDaysISO } from './utils'
 
 export const STORAGE_KEY = 'axiom.state.v1'
@@ -20,6 +21,16 @@ function daysAgo(days: number, hour = 10): string {
 }
 
 const projects: Project[] = [
+  {
+    id: 'p-axiom',
+    name: 'Axiom Core',
+    key: 'AXI',
+    description: 'This workspace, tracked as a project: shipped work, remaining features and known bugs.',
+    color: 'rose',
+    status: 'active',
+    createdAt: daysAgo(2),
+    targetDate: addDaysISO(45),
+  },
   {
     id: 'p-web',
     name: 'Website revamp',
@@ -68,6 +79,146 @@ type SeedIssue = Omit<Issue, 'createdAt' | 'updatedAt' | 'completedAt'> & {
 }
 
 const seedIssues: SeedIssue[] = [
+  {
+    id: 'i-axiom-1',
+    key: 'AXI-18',
+    title: 'Fix the theme menu overflowing the window edge',
+    description:
+      'The top-bar picker anchored to the trigger start edge and spilled past the right side of the window. It now anchors to the end edge, clamps to the viewport, and still closes on Escape or an outside click.',
+    status: 'done',
+    priority: 'high',
+    projectId: 'p-axiom',
+    labels: ['bug', 'ui'],
+    dueDate: null,
+    createdDaysAgo: 2,
+    completedDaysAgo: 0,
+  },
+  {
+    id: 'i-axiom-2',
+    key: 'AXI-19',
+    title: 'Tray labels keep the old app name after renaming',
+    description:
+      'The tray now rebuilds its tooltip and menu labels from the saved identity through the sync_tray command whenever the app name changes.',
+    status: 'done',
+    priority: 'low',
+    projectId: 'p-axiom',
+    labels: ['bug', 'native'],
+    dueDate: null,
+    createdDaysAgo: 2,
+    completedDaysAgo: 0,
+  },
+  {
+    id: 'i-axiom-3',
+    key: 'AXI-20',
+    title: 'Quick capture cannot target a project',
+    description:
+      'Global capture has an Inbox/project picker now, and the chosen project is stored on the new issue.',
+    status: 'done',
+    priority: 'medium',
+    projectId: 'p-axiom',
+    labels: ['bug', 'ux'],
+    dueDate: null,
+    createdDaysAgo: 1,
+    completedDaysAgo: 0,
+  },
+  {
+    id: 'i-axiom-4',
+    key: 'AXI-21',
+    title: 'Documents: ship the long-form editor',
+    description:
+      'The /documents shell exists but has no editor, hierarchy or storage. Needs a block model, nesting, backlinks and the table of contents.',
+    status: 'done',
+    priority: 'high',
+    projectId: 'p-axiom',
+    labels: ['feature', 'documents'],
+    dueDate: addDaysISO(30),
+    createdDaysAgo: 1,
+    completedDaysAgo: 0,
+  },
+  {
+    id: 'i-axiom-5',
+    key: 'AXI-22',
+    title: 'Library: scan volumes and attach copies',
+    description:
+      'The library data layer is ready; the review-first scanner, volume detection and relative-path attachment are not. This is the first real library milestone.',
+    status: 'done',
+    priority: 'high',
+    projectId: 'p-axiom',
+    labels: ['feature', 'library'],
+    dueDate: addDaysISO(45),
+    createdDaysAgo: 1,
+    completedDaysAgo: 0,
+  },
+  {
+    id: 'i-axiom-6',
+    key: 'AXI-23',
+    title: 'Appearance: accept local background images',
+    description:
+      'Backgrounds currently take an image URL. A file picker should copy the asset into app data and reference it safely instead of storing a data URL.',
+    status: 'done',
+    priority: 'medium',
+    projectId: 'p-axiom',
+    labels: ['feature', 'appearance'],
+    dueDate: null,
+    createdDaysAgo: 1,
+    completedDaysAgo: 0,
+  },
+  {
+    id: 'i-axiom-7',
+    key: 'AXI-24',
+    title: 'Audit contrast and focus rings across all three themes',
+    description:
+      'Crimson buttons now use light labels. Still to check: muted text on Paper, focus rings on Terminal, disabled states, and the new background layer at high opacity.',
+    status: 'done',
+    priority: 'medium',
+    projectId: 'p-axiom',
+    labels: ['design', 'a11y'],
+    dueDate: addDaysISO(7),
+    createdDaysAgo: 1,
+    completedDaysAgo: 0,
+  },
+  {
+    id: 'i-axiom-8',
+    key: 'AXI-25',
+    title: 'Backgrounds: allow per-page scope',
+    description:
+      'Scope is window or content column. Per-page backgrounds would let Notes or Library carry their own texture without changing the rest of the workspace.',
+    status: 'done',
+    priority: 'low',
+    projectId: 'p-axiom',
+    labels: ['feature', 'appearance'],
+    dueDate: null,
+    createdDaysAgo: 1,
+    completedDaysAgo: 0,
+  },
+  {
+    id: 'i-axiom-9',
+    key: 'AXI-26',
+    title: 'Settings appearance panel with theme cards',
+    description:
+      'A real Settings page with theme cards, background controls, profile and local data. Replaced the hidden personalization dialog.',
+    status: 'done',
+    priority: 'high',
+    projectId: 'p-axiom',
+    labels: ['feature', 'settings'],
+    dueDate: null,
+    createdDaysAgo: 1,
+    completedDaysAgo: 0,
+  },
+  {
+    id: 'i-axiom-10',
+    key: 'AXI-27',
+    title: 'Crimson brand pass and Classic accent',
+    description:
+      'New crimson mark across the app, icons and tray; Classic accent moved from violet to crimson with a separate strong fill for primary buttons.',
+    status: 'done',
+    priority: 'medium',
+    projectId: 'p-axiom',
+    labels: ['design', 'brand'],
+    dueDate: null,
+    createdDaysAgo: 1,
+    completedDaysAgo: 0,
+  },
   {
     id: 'i-1',
     key: 'WEB-1',
@@ -276,6 +427,132 @@ const seedIssues: SeedIssue[] = [
     dueDate: null,
     createdDaysAgo: 2,
   },
+  {
+    id: 'i-axiom-11',
+    key: 'AXI-28',
+    title: 'Project detail page with issues and overview',
+    description:
+      'A dedicated /projects/:id workspace with stats, overview, all issues grouped by status, and planned milestone/document tabs. Project cards now link into it.',
+    status: 'done',
+    priority: 'high',
+    projectId: 'p-axiom',
+    labels: ['feature', 'projects'],
+    dueDate: null,
+    createdDaysAgo: 1,
+    completedDaysAgo: 0,
+  },
+  {
+    id: 'i-axiom-12',
+    key: 'AXI-29',
+    title: 'Right-click menus for projects and issues',
+    description:
+      'A reusable context menu with viewport clamping, keyboard navigation and typed actions. Project cards and issue rows expose open, issue, archive and delete actions.',
+    status: 'done',
+    priority: 'high',
+    projectId: 'p-axiom',
+    labels: ['feature', 'ui'],
+    dueDate: null,
+    createdDaysAgo: 1,
+    completedDaysAgo: 0,
+  },
+  {
+    id: 'i-axiom-13',
+    key: 'AXI-30',
+    title: 'Micro-interactions for cards, rows and menus',
+    description:
+      'Hover lift on project cards, press settle, animated context menus, hover row actions and a visible actions affordance without crowding the list.',
+    status: 'done',
+    priority: 'medium',
+    projectId: 'p-axiom',
+    labels: ['design', 'ui'],
+    dueDate: null,
+    createdDaysAgo: 1,
+    completedDaysAgo: 0,
+  },
+  {
+    id: 'i-axiom-14',
+    key: 'AXI-31',
+    title: 'Milestones: model, dates and rollup',
+    description:
+      'Milestones become a first-class project primitive: title, due date, status, description and optional milestone on an issue. The project overview shows the next checkpoint.',
+    status: 'done',
+    priority: 'high',
+    projectId: 'p-axiom',
+    labels: ['feature', 'projects'],
+    dueDate: addDaysISO(21),
+    createdDaysAgo: 1,
+    completedDaysAgo: 0,
+  },
+  {
+    id: 'i-axiom-15',
+    key: 'AXI-32',
+    title: 'Project documents owned by the project',
+    description:
+      'Long-form project pages (briefs, specs, decisions) attached to a project, linkable from milestones and issues, reusing the Documents editor when it lands.',
+    status: 'done',
+    priority: 'medium',
+    projectId: 'p-axiom',
+    labels: ['feature', 'documents'],
+    dueDate: null,
+    createdDaysAgo: 1,
+    completedDaysAgo: 0,
+  },
+  {
+    id: 'i-axiom-16',
+    key: 'AXI-33',
+    title: 'Core action API for every entity surface',
+    description:
+      'Core API v1 is shipped: read commands (version, snapshot, project, issue) plus issue update/create mutations, a typed frontend client and the CORE-API contract. Mutation responses still feed the snapshot writer.',
+    status: 'done',
+    priority: 'medium',
+    projectId: 'p-axiom',
+    labels: ['core', 'api'],
+    dueDate: addDaysISO(14),
+    createdDaysAgo: 1,
+    completedDaysAgo: 0,
+  },
+  {
+    id: 'i-api-34',
+    key: 'AXI-34',
+    title: 'Pointer-based drag sorting with visible handles',
+    description:
+      'HTML5 drag was unreliable in WebView2, so sorting now uses pointer events, elementFromPoint and a floating label. Handles are always faintly visible on projects and issues.',
+    status: 'done',
+    priority: 'high',
+    projectId: 'p-axiom',
+    labels: ['feature', 'ui'],
+    dueDate: null,
+    createdDaysAgo: 0,
+    completedDaysAgo: 0,
+  },
+  {
+    id: 'i-api-35',
+    key: 'AXI-35',
+    title: 'Shared IssueList for Issues and project detail',
+    description:
+      'One listing component now owns status groups, per-group add, drag reorder and empty states. The Issues page and the project Issues tab only supply data and the add handler.',
+    status: 'done',
+    priority: 'high',
+    projectId: 'p-axiom',
+    labels: ['feature', 'ui'],
+    dueDate: null,
+    createdDaysAgo: 0,
+    completedDaysAgo: 0,
+  },
+  {
+    id: 'i-api-36',
+    key: 'AXI-36',
+    title: 'Auto-scroll while pointer sorting',
+    description:
+      'Dragging near the viewport edge should scroll the list. The current sortable works within the visible area only.',
+    status: 'done',
+    priority: 'low',
+    projectId: 'p-axiom',
+    labels: ['ux', 'sorting'],
+    dueDate: null,
+    createdDaysAgo: 0,
+    completedDaysAgo: 0,
+  },
 ]
 
 const issues: Issue[] = seedIssues.map(({ createdDaysAgo, completedDaysAgo, ...issue }) => {
@@ -373,18 +650,158 @@ Next month: one inbox, one list, one place for notes.`,
     createdAt: daysAgo(20),
     updatedAt: daysAgo(0, 7),
   },
+  {
+    id: 'n-axiom-plan',
+    title: 'Project workspace — the plan',
+    content: `The plan for turning projects into containers, not just filtered task lists.
+
+**Model**
+- Project — key, name, description, colour, status, target date. Shipped.
+- Milestone — title, due date, status, description and a rollup of its issues. Next.
+- Project document — long-form page owned by a project. Later.
+- Issue — gains an optional milestone so a task can roll up without moving it.
+
+**Action API**
+Cards, context menus, the detail header and the palette should call one typed action layer rather
+than re-implementing navigation. The contract is injected with handlers:
+open(project), openIssues(project), newIssue(project), archive/restore(project),
+edit(issue), toggleDone(issue), openProject(issue), remove(issue), copyKey(issue).
+The same shape can later be backed by Tauri commands.
+
+**Phases**
+1. Project detail, context menus and micro-interactions — done (AXI-28, AXI-29, AXI-30).
+2. Milestones and rollups — AXI-31.
+3. Project documents — AXI-32.
+4. Move the action layer behind the core boundary — AXI-33.
+
+**Open questions**
+- One milestone per issue, or many?
+- Do project documents share the Notes store or get their own table?
+- Should project documents compile into the bundled docs, or stay private?
+- Does archiving a project also archive its milestones and documents?`,
+    projectId: 'p-axiom',
+    tags: ['planning', 'architecture'],
+    pinned: true,
+    createdAt: daysAgo(0, 9),
+    updatedAt: daysAgo(0, 8),
+  },]
+
+
+const documents: DocumentRecord[] = [
+  {
+    id: 'd-axiom-brief',
+    title: 'Axiom Core — project brief',
+    content: `A desktop-first personal workspace: projects, issues, notes, documents and a media library.
+
+**Shipped**
+- Project detail, context menus and pointer sorting.
+- Shared issue list across Issues and project detail.
+- Settings, themes and backgrounds.
+- Core API v1: reads plus issue mutations.
+
+**Next**
+- Documents and milestones as first-class entities.
+- Library folder scan and import.
+- Local background images and per-page overrides.
+
+**Constraints**
+- One writer: the SQLite snapshot.
+- No bundled browser engine.
+- Offline first; no telemetry.`,
+    projectId: 'p-axiom',
+    pinned: true,
+    createdAt: daysAgo(2),
+    updatedAt: daysAgo(0, 9),
+  },
+  {
+    id: 'd-core-api',
+    title: 'Core API contract',
+    content: `The core API is the boundary between Rust and any surface.
+
+**Commands (v1)**
+- core_api_version
+- core_snapshot
+- core_project(projectId)
+- core_issue(issueId)
+- core_issue_update(issueId, patch)
+- core_issue_create(draft)
+
+**Rules**
+- Mutations load the snapshot, validate, and call save_state.
+- Status and priority are enums; empty titles are rejected.
+- Counters derive issue keys exactly like the UI.
+
+**Next**
+- Project update/delete and issue reorder.
+- Milestones and project documents.`,
+    projectId: 'p-axiom',
+    pinned: false,
+    createdAt: daysAgo(1),
+    updatedAt: daysAgo(0, 8),
+  },
+  {
+    id: 'd-writing-style',
+    title: 'Writing style',
+    content: `Short sentences. Concrete verbs. No filler.
+
+- Prefer "deleted" over "removed from the system".
+- Say what the user can do now, then what is planned.
+- A bug note names the symptom, the cause and the fix.`,
+    projectId: null,
+    pinned: false,
+    createdAt: daysAgo(12),
+    updatedAt: daysAgo(4),
+  },
+]
+
+const milestones: Milestone[] = [
+  {
+    id: 'm-workspace',
+    projectId: 'p-axiom',
+    title: 'Project workspace',
+    description: 'Detail page, context menus, pointer sorting and one shared issue list.',
+    dueDate: addDaysISO(0),
+    status: 'done',
+    issueIds: ['i-axiom-11', 'i-axiom-12', 'i-axiom-13', 'i-api-34', 'i-api-35'],
+    createdAt: daysAgo(2),
+  },
+  {
+    id: 'm-docs',
+    projectId: 'p-axiom',
+    title: 'Documents and milestones',
+    description: 'First-class documents plus milestone rollups in the project workspace.',
+    dueDate: addDaysISO(21),
+    status: 'open',
+    issueIds: ['i-axiom-4', 'i-axiom-14', 'i-axiom-15'],
+    createdAt: daysAgo(1),
+  },
+  {
+    id: 'm-library',
+    projectId: 'p-axiom',
+    title: 'Library and polish',
+    description: 'Folder scan, local images, per-page backgrounds and the contrast pass.',
+    dueDate: addDaysISO(45),
+    status: 'open',
+    issueIds: ['i-axiom-5', 'i-axiom-6', 'i-axiom-7', 'i-axiom-8', 'i-api-36'],
+    createdAt: daysAgo(1),
+  },
 ]
 
 export function createSeedState(): AppState {
   return {
     version: APP_VERSION,
     identity: DEFAULT_IDENTITY,
-    theme: 'axiom',
+    appearance: DEFAULT_APPEARANCE,
+    theme: 'classic',
     sidebarCollapsed: false,
     projects,
     issues,
     notes,
+    documents,
+    milestones,
     activity: [
+      { id: 'a-axiom-1', kind: 'project', message: 'Created project · Axiom Core', at: daysAgo(2, 10) },
+      { id: 'a-axiom-2', kind: 'issue', message: 'Completed AXI-18 · Fix the theme menu overflow', at: daysAgo(0, 12) },
       { id: 'a-1', kind: 'note', message: 'Edited “Weekly review — the template I keep coming back to”', at: daysAgo(0, 8) },
       { id: 'a-2', kind: 'issue', message: 'Moved WEB-1 to In progress', at: daysAgo(0, 11) },
       { id: 'a-3', kind: 'issue', message: 'Completed LIFE-15 · Book dentist appointment', at: daysAgo(1, 16) },
@@ -392,6 +809,6 @@ export function createSeedState(): AppState {
       { id: 'a-5', kind: 'issue', message: 'Completed WEB-5 · Ship dark mode toggle', at: daysAgo(2, 16) },
       { id: 'a-6', kind: 'project', message: 'Created project · Reading list', at: daysAgo(21, 10) },
     ],
-    counters: { issue: 17 },
+    counters: { issue: 36 },
   }
 }

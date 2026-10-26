@@ -47,7 +47,7 @@ const GROUP_ORDER: PaletteItem['group'][] = ['Pages', 'Actions', 'Issues', 'Note
 
 export function CommandPalette() {
   const { state, setTheme, addNote } = useApp()
-  const { paletteOpen, closePalette, openIssueDialog, openSettings } = useUI()
+  const { paletteOpen, closePalette, openIssueDialog } = useUI()
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
   const [active, setActive] = useState(0)
@@ -179,10 +179,10 @@ export function CommandPalette() {
         id: 'action-settings',
         group: 'Actions',
         title: 'Personalization',
-        subtitle: 'Rename the app, workspace and owner',
+        subtitle: 'Appearance, profile and local data',
         icon: <Settings2 className="size-3.5" />,
         keywords: 'settings identity name rename workspace owner theme',
-        run: openSettings,
+        run: () => navigate('/settings'),
       },
       {
         id: 'action-theme',

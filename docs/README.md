@@ -18,6 +18,7 @@ page and feature has its own document; the product-level specs live in
 | [Product spec](resources/SPEC.md) | Vision, scope, roadmap, open questions |
 | [Library spec](resources/LIBRARY.md) | Media module: kinds, copies, volumes, scanning |
 | [Design system](resources/DESIGN.md) | Tokens, themes, components, change recipes |
+| [Core API](resources/CORE-API.md) | Versioned read and issue mutation API |
 
 ## Pages
 
@@ -27,11 +28,13 @@ page and feature has its own document; the product-level specs live in
 | `/issues` | Issues | [issues.md](pages/issues.md) | status groups, filters, search, inline complete, edit dialog |
 | `/issues?project=<id>` | Project-scoped issues | [issues.md](pages/issues.md) | same list filtered to one project |
 | `/projects` | Projects | [projects.md](pages/projects.md) | progress cards, create, archive, restore, per-project task |
+| `/projects/:id` | Project detail | [project-detail.md](pages/project-detail.md) | stats, overview, issues, planned milestones/documents |
 | `/notes` | Notes | [notes.md](pages/notes.md) | note list, search, editor, tags, pin, autosave |
 | `/notes?note=<id>` | Note deep link | [notes.md](pages/notes.md) | opens a specific note |
 | `/documents` | Documents | [documents.md](pages/documents.md) | planned long-form pages; status surface only |
 | `/library` | Library | [library.md](pages/library.md) | media kinds overview; browsing planned |
 | `/tools` | Tools | [tools.md](pages/tools.md) | docs, personalization, appearance, reset |
+| `/settings` | Settings | [settings.md](pages/settings.md) | themes, background, profile, local data |
 | *(desktop window)* | Quick capture | [quick-capture.md](features/quick-capture.md) | global hotkey, one-line capture |
 
 Unknown routes redirect to the dashboard.
@@ -46,7 +49,12 @@ Unknown routes redirect to the dashboard.
 | Themes and design tokens | shipped | [themes.md](features/themes.md) | `src/index.css`, `src/lib/themes.ts` |
 | Persistence (SQLite + cache) | shipped | [persistence.md](features/persistence.md) | `src-tauri/src/data/`, `src/lib/db.ts` |
 | Keyboard model | shipped | [keyboard.md](features/keyboard.md) | `src/lib/ui.tsx`, components |
-| Media library | data layer only | [media-library.md](features/media-library.md) | `src-tauri/src/data/db.rs`, `src/lib/library-*.ts` |
+| Media library | scan/import MVP | [media-library.md](features/media-library.md) | `src-tauri/src/library_scan.rs`, `src/pages/library.tsx` |`n| Documents | shipped | [documents.md](pages/documents.md) | `src/pages/documents.tsx`, `src/components/document-list.tsx` |
+| In-app documentation | shipped | [in-app-docs.md](features/in-app-docs.md) | `src/pages/docs.tsx`, `src/lib/docs.ts` |
+| Personalization | shipped | [personalization.md](features/personalization.md) | `src/lib/identity.ts`, `src/pages/settings.tsx` |
+| Project workspace | shipped | [project-detail.md](pages/project-detail.md) | `src/pages/project-detail.tsx`, `src/lib/actions.ts` |
+| Core API v1 | shipped | [CORE-API.md](resources/CORE-API.md) | `src-tauri/src/data/api.rs`, `src/lib/core-api.ts` |
+| Settings & appearance | shipped | [settings.md](pages/settings.md) | `src/pages/settings.tsx`, `src/lib/appearance.ts` |
 
 Status vocabulary used throughout the docs:
 

@@ -26,6 +26,7 @@ personal-manager/
 │   │   ├── documents.tsx      /documents (planned feature shell)
 │   │   ├── library.tsx        /library (data-layer status surface)
 │   │   ├── tools.tsx          /tools (docs, identity, appearance, data)
+│   │   ├── settings.tsx       /settings (appearance, profile, data)
 │   │   └── docs.tsx           /docs reference viewer
 │   │
 │   ├── components/            shell, primitives and domain components
@@ -38,7 +39,10 @@ personal-manager/
 │   │   ├── issue-bits.tsx     status/priority icons, chips, pickers
 │   │   ├── issue-dialog.tsx   create/edit task dialog
 │   │   ├── markdown.tsx       dependency-free docs renderer
-│   │   ├── settings-dialog.tsx  personalization (app/workspace/owner)
+│   │   ├── context-menu.tsx   viewport-clamped action menu
+│   │   ├── delete-project-dialog.tsx  inbox / move / cascade choices
+│   │   ├── drag-overlay.tsx    floating drag label
+│   │   ├── app-background.tsx  theme-aware background layer
 │   │   └── command-palette.tsx  ⌘K palette
 │   │
 │   └── lib/                   state, logic and adapters
@@ -51,6 +55,10 @@ personal-manager/
 │       ├── store.tsx          reducer, intent methods, persistence effects
 │       ├── ui.tsx             overlay state and global shortcuts
 │       ├── docs.ts            markdown library, sections, link resolution
+│       ├── actions.ts        typed project/issue action contract
+│       ├── use-pointer-sort.ts pointer-driven sorting (no HTML5 drag)
+│       ├── core-api.ts       typed client for the Rust core API
+│       ├── appearance.ts      background defaults and normalization
 │       ├── identity.ts        defaults for name/workspace/owner
 │       ├── window.ts          native window title bridge
 │       ├── db.ts              Tauri ↔ SQLite bridge for the workspace
@@ -67,7 +75,7 @@ personal-manager/
 │       ├── main.rs            Windows entry point
 │       ├── lib.rs             tray, hotkey, windows, commands, lifecycle
 │       └── data/
-│           ├── models.rs      serde models shared with the frontend
+│           ├── api.rs         core issue mutations (load → validate → save)`n│           ├── models.rs      serde models shared with the frontend
 │           └── db.rs          schema, migrations, queries, writes
 │
 ├── docs/                      documentation (this folder)

@@ -11,7 +11,7 @@ bottom of the navigation instead of scattering icons.
 | Tool | Behaviour |
 | --- | --- |
 | **Documentation** | Opens `/docs`, the offline documentation reader |
-| **Personalization** | Opens the identity dialog (app name, workspace, owner) |
+| **Settings** | Opens `/settings` for appearance, profile and local data |
 | **Appearance** | Theme picker (Axiom, Paper, Graphite) |
 | **Workspace data** | Resets the demo workspace after a confirmation; never touches media drives |
 
@@ -25,7 +25,7 @@ bottom of the navigation instead of scattering icons.
 ## Code map
 
 - `src/pages/tools.tsx` — page composition
-- `src/components/settings-dialog.tsx` — personalization form
+- `src/pages/settings.tsx` — appearance, profile and data
 - `src/components/theme-picker.tsx` — theme menu
 - `src/lib/store.tsx` — `resetData`
 

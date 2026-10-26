@@ -39,9 +39,6 @@ interface UIContextValue {
   issueDialog: IssueDialogState
   openIssueDialog: (config?: IssueDialogConfig) => void
   closeIssueDialog: () => void
-  settingsOpen: boolean
-  openSettings: () => void
-  closeSettings: () => void
 }
 
 const UIContext = createContext<UIContextValue | null>(null)
@@ -53,7 +50,6 @@ const CLOSED_DIALOG: IssueDialogState = { open: false, issueId: null }
 export function UIProvider({ children }: { children: ReactNode }) {
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [issueDialog, setIssueDialog] = useState<IssueDialogState>(CLOSED_DIALOG)
-  const [settingsOpen, setSettingsOpen] = useState(false)
 
   const openPalette = useCallback(() => setPaletteOpen(true), [])
   const closePalette = useCallback(() => setPaletteOpen(false), [])
@@ -68,9 +64,6 @@ export function UIProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const closeIssueDialog = useCallback(() => setIssueDialog(CLOSED_DIALOG), [])
-
-  const openSettings = useCallback(() => setSettingsOpen(true), [])
-  const closeSettings = useCallback(() => setSettingsOpen(false), [])
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -108,9 +101,6 @@ export function UIProvider({ children }: { children: ReactNode }) {
       issueDialog,
       openIssueDialog,
       closeIssueDialog,
-      settingsOpen,
-      openSettings,
-      closeSettings,
     }),
     [
       paletteOpen,
@@ -119,9 +109,6 @@ export function UIProvider({ children }: { children: ReactNode }) {
       issueDialog,
       openIssueDialog,
       closeIssueDialog,
-      settingsOpen,
-      openSettings,
-      closeSettings,
     ],
   )
 

@@ -19,6 +19,7 @@
   --color-fg-muted: var(--fg-muted);
   --color-fg-subtle: var(--fg-subtle);
   --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
   --color-accent-soft: var(--accent-soft);
   --color-accent-fg: var(--accent-fg);
   --color-ok: var(--ok);
@@ -26,11 +27,11 @@
   --color-warn: var(--warn);
   --color-warn-soft: var(--warn-soft);
   --color-danger: var(--danger);
+  --color-danger-strong: var(--danger-strong);
   --color-danger-soft: var(--danger-soft);
   --color-info: var(--info);
 
-  --font-sans:
-    'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-sans: var(--theme-sans-font);
   --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
   --font-display: var(--theme-display-font);
   --radius-card: var(--theme-radius-card);
@@ -43,8 +44,9 @@
 
 /* Themes: every theme sets the same semantic tokens. Components never use raw colours. */
 :root,
-[data-theme='axiom'] {
+[data-theme='classic'] {
   color-scheme: dark;
+  --theme-sans-font: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --theme-display-font: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --theme-radius-card: 12px;
   --theme-radius-control: 8px;
@@ -57,21 +59,24 @@
   --line-strong: #343741;
   --fg: #edeef3;
   --fg-muted: #a1a4b2;
-  --fg-subtle: #6f7382;
-  --accent: #8b86ff;
-  --accent-soft: #1b1a33;
-  --accent-fg: #0a0a12;
+  --fg-subtle: #7b8090;
+  --accent: #ff3b52;
+  --accent-strong: #cf1230;
+  --accent-soft: #2b0810;
+  --accent-fg: #fff6f7;
   --ok: #3ecf8e;
   --ok-soft: #0f2a20;
   --warn: #f0b429;
   --warn-soft: #2a2313;
   --danger: #fb7185;
+  --danger-strong: #b3122a;
   --danger-soft: #2b1419;
   --info: #60a5fa;
 }
 
 [data-theme='paper'] {
   color-scheme: light;
+  --theme-sans-font: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --theme-display-font: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
   --theme-radius-card: 6px;
   --theme-radius-control: 4px;
@@ -84,44 +89,63 @@
   --line-strong: #cdbfa7;
   --fg: #211d18;
   --fg-muted: #6b6154;
-  --fg-subtle: #94897a;
+  --fg-subtle: #6f6458;
   --accent: #a5482c;
+  --accent-strong: #8f3a22;
   --accent-soft: #f4e2d4;
-  --accent-fg: #fffaf2;
+  --accent-fg: #fff8f3;
   --ok: #3f7d4e;
   --ok-soft: #e6f0e2;
   --warn: #a5681a;
   --warn-soft: #f7ecd4;
   --danger: #a8322f;
+  --danger-strong: #8f2a26;
   --danger-soft: #f6ded8;
   --info: #2f5f8f;
 }
 
-[data-theme='graphite'] {
+[data-theme='terminal'] {
   color-scheme: dark;
-  --theme-display-font: 'Inter', ui-sans-serif, system-ui, sans-serif;
-  --theme-radius-card: 8px;
-  --theme-radius-control: 6px;
+  --theme-sans-font: 'JetBrains Mono', 'Cascadia Mono', ui-monospace, 'SF Mono', Consolas, monospace;
+  --theme-display-font: 'JetBrains Mono', 'Cascadia Mono', ui-monospace, 'SF Mono', Consolas, monospace;
+  --theme-radius-card: 3px;
+  --theme-radius-control: 2px;
 
-  --canvas: #0a0b0c;
-  --surface: #101214;
-  --surface-2: #171a1d;
-  --surface-3: #1e2226;
-  --line: #24282c;
-  --line-strong: #363c42;
-  --fg: #e6e8ea;
-  --fg-muted: #9aa2a8;
-  --fg-subtle: #6b7379;
-  --accent: #5fd4d0;
-  --accent-soft: #0d2b2a;
-  --accent-fg: #041514;
-  --ok: #6fcf97;
-  --ok-soft: #10251a;
-  --warn: #e6b450;
-  --warn-soft: #2a2212;
-  --danger: #f0736e;
-  --danger-soft: #2b1414;
-  --info: #6fb3e0;
+  --canvas: #050806;
+  --surface: #080d09;
+  --surface-2: #0d140f;
+  --surface-3: #131d15;
+  --line: #1d2c21;
+  --line-strong: #2c4634;
+  --fg: #d8f7de;
+  --fg-muted: #8fb79a;
+  --fg-subtle: #6f927c;
+  --accent: #4ff08a;
+  --accent-strong: #4ff08a;
+  --accent-soft: #0b2a17;
+  --accent-fg: #041408;
+  --ok: #4ff08a;
+  --ok-soft: #0b2a17;
+  --warn: #ffc66d;
+  --warn-soft: #2a2110;
+  --danger: #ff7d7d;
+  --danger-strong: #a33232;
+  --danger-soft: #2a1414;
+  --info: #6fd3ff;
+}
+
+/* Terminal gets a very faint phosphor scanline; it never intercepts input. */
+[data-theme='terminal'] body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    color-mix(in oklab, var(--accent) 3%, transparent) 0 1px,
+    transparent 1px 3px
+  );
 }
 @layer base {
   * {
@@ -231,4 +255,48 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+/* Context menus settle in rather than popping */
+@keyframes menu-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-3px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.menu-pop {
+  animation: menu-pop 120ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  transform-origin: top left;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-pop {
+    animation: none;
+  }
+}
+/* Pointer sorting: keep text selection and cursors out of the way */
+.pointer-sorting {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.pointer-sorting * {
+  cursor: grabbing !important;
+}
+/* Focus and disabled states are part of the token system, not per-component guesses. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--accent) 80%, transparent);
+  outline-offset: 2px;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--accent) 28%, transparent);
 }

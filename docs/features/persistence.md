@@ -44,7 +44,7 @@ will produce many rows.
 
 1. On mount, `AppProvider` initialises from localStorage (synchronous, no spinner).
 2. A second effect calls `load_state` in Tauri. If the database has data (`meta.initialized = 1`),
-   the result replaces state; the theme id is normalised (`dark` → `axiom`, `light` → `paper`).
+   the result replaces state; the theme id is normalised (`dark`, `orbit`, `axiom`, `graphite` → `classic`, `light` → `paper`).
 3. If the database is empty, `load_state` returns `null` and the seed state is written by the save
    effect — that is how a fresh install gets its demo workspace.
 
@@ -77,7 +77,7 @@ This release was previously called **Orbit**. Migration is automatic:
 - the database renames `orbit.db` (and its `-wal` / `-shm` files) to `axiom.db` on first start.
 - environment overrides prefer `AXIOM_DATA_DIR` / `AXIOM_WEBVIEW_DATA_DIR` / `AXIOM_START_HIDDEN`
   and still accept the old `ORBIT_*` names.
-- legacy theme ids `orbit` and `dark` map to `axiom`.
+- legacy theme ids `orbit`, `dark`, `axiom` and `graphite` map to `classic`.
 ## Verification performed
 
 - Schema and data inspected directly: 4 projects, 17 issues, 5 notes, 6 activity rows, 6 media

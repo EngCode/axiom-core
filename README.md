@@ -105,10 +105,14 @@ to iterate on the UI.
 
 ## Themes and design system
 
-Three themes ship: **Axiom** (violet on near-black, default), **Paper** (warm editorial light,
-serif headings, rust accent) and **Graphite** (neutral dark, cyan accent). Switch from the palette
-icon in the sidebar or top bar, or `⌘K` → *Theme*. The choice is stored in `AppState` and in
-SQLite, and the theme is applied before first paint.
+Three themes ship: **Classic** (crimson on near-black, default), **Paper** (warm editorial light,
+serif headings, rust accent) and **Terminal** (phosphor green, monospace, square edges). Switch
+from the palette icon in the sidebar or top bar, or `⌘K` → *Theme*. `?theme=terminal` previews a
+theme directly.
+
+![Terminal theme](docs/preview-terminal.png)
+
+The choice is stored in `AppState` and SQLite and applied before first paint.
 
 - Tokens and theme blocks: `src/index.css` (every colour, radius and display font is a variable).
 - Theme registry and legacy mapping: `src/lib/themes.ts`.
@@ -169,8 +173,8 @@ Axiom Core is closed resets it completely. There is no sync yet — export/impor
 
 ## Personalization
 
-Rename the app, the workspace and yourself from the **gear** in the sidebar footer, or `⌘K` →
-*Personalization*. The sidebar brand, greeting, window title and quick capture all update
+Rename the app, the workspace and yourself from **Settings → Profile** (sidebar footer, top-bar
+avatar, or `⌘K` → *Settings*). The sidebar brand, greeting, window title and quick capture all update
 immediately; values are stored with your data (`identity.*` in SQLite, inside `axiom.state.v1` in
 localStorage). Defaults live in `src/lib/identity.ts`; the executable and bundle metadata live in
 `src-tauri/tauri.conf.json`.

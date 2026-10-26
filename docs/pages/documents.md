@@ -1,37 +1,44 @@
 # Documents
 
-**Route:** `/documents` · **Status:** page shell shipped, feature **planned** ·
-**Source:** [`src/pages/documents.tsx`](../../src/pages/documents.tsx)
+**Route:** `/documents` · **Status:** shipped ·
+**Source:** [`src/pages/documents.tsx`](../../src/pages/documents.tsx) ·
+**List:** [`document-list.tsx`](../../src/components/document-list.tsx)
 
-Documents is the long-form counterpart to Notes. The navigation and page exist so the workspace has
-the right skeleton; editing, nesting and linking are not implemented yet.
+![Documents page](../preview-documents.png)
 
-## What exists today
+Documents are the long-form counterpart to Notes: briefs, specs and decision records that can live
+inside a project.
 
-- A route and sidebar entry under the workspace's secondary navigation.
-- A page that explains the intended scope and links to the Notes documentation.
-- No editor, no storage fields, no actions.
+## Editor
 
-## Intended scope
-
-| Capability | Status |
+| Control | Behaviour |
 | --- | --- |
-| Long-form page with sections and a table of contents | planned |
-| Link documents to projects, issues and library items | planned |
-| Nested pages and backlinks | planned |
-| Markdown import, PDF export | planned |
+| Title | inline, autosaves through `updateDocument` |
+| Project | optional; assigns the document to a project |
+| Write / Preview | Markdown source or rendered preview |
+| Pin | keeps the document at the top of lists |
+| Delete | confirmed; removes the document |
+| Search | filters title and content |
+| `?doc=<id>` | deep link to a document |
 
-## Data model (not started)
+The list is shared with the project detail page: `DocumentList` owns the rows, project badges and
+empty states.
 
-Documents will need their own table rather than reusing `notes`, because they carry hierarchy,
-blocks and references. The decision is documented here before any schema change.
+## Project documents
 
-## Why a separate section from Notes
+- A document carries `projectId`; the project Documents tab filters by it.
+- Creating from the project assigns the project and opens the editor.
+- The same editor is used everywhere; there is no second document component.
+- Documents are not notes: they have their own model and are not mixed into the Notes list.
 
-Notes are quick capture and thinking; Documents are structured, referenced pages that belong to a
-project. Merging them would make both worse, so the sidebar treats them as distinct.
+## Storage
 
-## Next step
+Documents live in `AppState.documents` and persist as JSON in the SQLite `meta` table under
+`documents`. The snapshot writer remains the only writer.
 
-Agree on the editor and hierarchy model (see the open questions in
-[SPEC.md](../resources/SPEC.md)), then add the table, commands and editor.
+## Known gaps
+
+- No hierarchy, backlinks or table of contents yet.
+- Markdown preview resolves relative links against the bundled docs, not the document graph.
+- No export to PDF/Markdown.
+- No collaborative history or versions.

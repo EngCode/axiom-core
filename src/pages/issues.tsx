@@ -8,13 +8,12 @@ import { useMemo, useState, type ReactNode } from 'react'
 import { Plus, Search, SlidersHorizontal } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 
-import { IssueRow } from '@/components/issue-row'
+import { IssueList } from '@/components/issue-list'
 import { StatusIcon } from '@/components/issue-bits'
 import {
   Button,
   Card,
   EmptyState,
-  IconButton,
   Input,
   PageHeader,
   Select,
@@ -62,10 +61,6 @@ export default function IssuesPage() {
   }, [scoped])
 
   const visible = statusFilter === 'all' ? scoped : scoped.filter((issue) => issue.status === statusFilter)
-  const groups = STATUS_ORDER.map((status) => ({
-    status,
-    items: visible.filter((issue) => issue.status === status),
-  })).filter((group) => group.items.length > 0)
 
   const hasFilters = projectFilter !== 'all' || statusFilter !== 'all' || priorityFilter !== 'all' || query.trim() !== ''
 
@@ -177,7 +172,7 @@ export default function IssuesPage() {
         </div>
       </div>
 
-      {groups.length === 0 ? (
+      {visible.length === 0 ? (
         <Card>
           <EmptyState
             icon={<Search className="size-4" />}
@@ -203,36 +198,11 @@ export default function IssuesPage() {
         </Card>
       ) : (
         <div className="space-y-3">
-          {groups.map(({ status, items }) => (
-            <Card key={status}>
-              <div className="flex items-center gap-2 px-3 py-2">
-                <StatusIcon status={status} />
-                <h2 className="text-[12.5px] font-medium text-fg">{STATUS_META[status].label}</h2>
-                <span className="text-[10.5px] text-fg-subtle tabular-nums">{items.length}</span>
-                <span className="hidden text-[10.5px] text-fg-subtle/70 sm:inline">
-                  · {STATUS_META[status].hint}
-                </span>
-                <div className="ms-auto">
-                  <IconButton
-                    label={`New ${STATUS_META[status].label.toLowerCase()} issue`}
-                    onClick={() => addIssue(status)}
-                    className="size-7"
-                  >
-                    <Plus className="size-3.5" />
-                  </IconButton>
-                </div>
-              </div>
-              <div className="divide-y divide-line/60 border-t border-line/60">
-                {items.map((issue) => (
-                  <IssueRow key={issue.id} issue={issue} />
-                ))}
-              </div>
-            </Card>
-          ))}
+          <IssueList issues={visible} onAdd={addIssue} />
           <p className="px-1 text-[10.5px] text-fg-subtle">
             Showing {pluralize(visible.length, 'issue')}
-            {visible.length !== state.issues.length ? ` of ${state.issues.length}` : ''}. Click a row to
-            edit · click the circle to complete.
+            {visible.length !== state.issues.length ? ` of ${state.issues.length}` : ''}. Drag rows to
+            reorder · click a row to edit · click the circle to complete.
           </p>
         </div>
       )}

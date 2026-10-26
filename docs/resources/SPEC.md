@@ -208,7 +208,7 @@ desynchronise.
 - **Type:** Inter (UI), JetBrains Mono (keys and IDs). Sizes: 10–11px metadata, 12–13px UI,
   20–27px headings. Tight tracking on large text.
 - **Colour:** near-black canvas, layered surfaces (`surface`, `surface-2`, `surface-3`), one
-  violet accent. Status colours: amber = in progress, violet = done, grey = backlog/todo.
+  crimson accent. Status colours: amber = in progress, accent = done, grey = backlog/todo.
   Priority: rose/amber/sky/grey bars. Everything is a CSS variable with light/dark values.
 - **Shape & depth:** 8–12px radii, 1px borders, shadows only for floating layers
   (dialogs, palette). Hairline dividers inside lists.

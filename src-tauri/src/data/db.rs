@@ -10,7 +10,8 @@ use std::path::Path;
 use rusqlite::{params, Connection, OptionalExtension, Result};
 
 use super::models::{
-    ActivityEntry, AppState, Counters, Identity, Issue, LibrarySnapshot, MediaCopy, MediaItem, MediaKind,
+    ActivityEntry, Appearance, AppState, BackgroundSettings, Counters, Identity, Issue, LibrarySnapshot,
+    MediaCopy, MediaItem, MediaKind,
     MediaProgress, Note, Project, Volume,
 };
 
@@ -231,7 +232,7 @@ pub fn load_state(connection: &Connection) -> Result<Option<AppState>> {
         return Ok(None);
     }
 
-    let theme = meta_value(connection, "theme")?.unwrap_or_else(|| "axiom".to_string());
+    let theme = meta_value(connection, "theme")?.unwrap_or_else(|| "classic".to_string());
     let sidebar_collapsed = meta_value(connection, "sidebarCollapsed")?.as_deref() == Some("1");
 
     let identity = Identity {
@@ -320,6 +321,28 @@ pub fn load_state(connection: &Connection) -> Result<Option<AppState>> {
         })?
         .collect::<Result<Vec<_>>>()?;
 
+    let documents = meta_value(connection, "documents")?
+        .and_then(|value| serde_json::from_str(&value).ok())
+        .unwrap_or_default();
+    let milestones = meta_value(connection, "milestones")?
+        .and_then(|value| serde_json::from_str(&value).ok())
+        .unwrap_or_default();
+
+    let appearance = Appearance {
+        background: BackgroundSettings {
+            kind: meta_value(connection, "appearance.backgroundKind")?
+                .unwrap_or_else(|| "none".to_string()),
+            image_url: meta_value(connection, "appearance.imageUrl")?.unwrap_or_default(),
+            opacity: meta_value(connection, "appearance.opacity")?
+                .and_then(|value| value.parse::<f64>().ok())
+                .unwrap_or(0.18),
+            scope: meta_value(connection, "appearance.scope")?
+                .unwrap_or_else(|| "window".to_string()),
+        },
+        page_backgrounds: meta_value(connection, "appearance.pageBackgrounds")?
+            .and_then(|value| serde_json::from_str(&value).ok())
+            .unwrap_or_default(),
+    };
     let issue_counter = connection
         .query_row("SELECT value FROM counters WHERE name = 'issue'", [], |row| row.get(0))
         .optional()?
@@ -328,11 +351,14 @@ pub fn load_state(connection: &Connection) -> Result<Option<AppState>> {
     Ok(Some(AppState {
         version: SCHEMA_VERSION as u32,
         identity,
+        appearance,
         theme,
         sidebar_collapsed,
         projects,
         issues,
         notes,
+        documents,
+        milestones,
         activity,
         counters: Counters {
             issue: issue_counter,
@@ -423,6 +449,17 @@ pub fn save_state(connection: &mut Connection, state: &AppState) -> Result<()> {
         params![state.counters.issue],
     )?;
 
+    set_meta(
+        &transaction,
+        "documents",
+        &serde_json::to_string(&state.documents).unwrap_or_else(|_| "[]".to_string()),
+    )?;
+    set_meta(
+        &transaction,
+        "milestones",
+        &serde_json::to_string(&state.milestones).unwrap_or_else(|_| "[]".to_string()),
+    )?;
+
     set_meta(&transaction, "theme", &state.theme)?;
     set_meta(&transaction, "identity.appName", &state.identity.app_name)?;
     set_meta(
@@ -431,6 +468,32 @@ pub fn save_state(connection: &mut Connection, state: &AppState) -> Result<()> {
         &state.identity.workspace_name,
     )?;
     set_meta(&transaction, "identity.ownerName", &state.identity.owner_name)?;
+    set_meta(
+        &transaction,
+        "appearance.backgroundKind",
+        &state.appearance.background.kind,
+    )?;
+    set_meta(
+        &transaction,
+        "appearance.imageUrl",
+        &state.appearance.background.image_url,
+    )?;
+    set_meta(
+        &transaction,
+        "appearance.opacity",
+        &state.appearance.background.opacity.to_string(),
+    )?;
+    set_meta(
+        &transaction,
+        "appearance.scope",
+        &state.appearance.background.scope,
+    )?;
+    set_meta(
+        &transaction,
+        "appearance.pageBackgrounds",
+        &serde_json::to_string(&state.appearance.page_backgrounds)
+            .unwrap_or_else(|_| "{}".to_string()),
+    )?;
     set_meta(
         &transaction,
         "sidebarCollapsed",

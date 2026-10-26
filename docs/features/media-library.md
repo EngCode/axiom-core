@@ -1,6 +1,6 @@
 # Media library
 
-**Status:** data layer shipped · UI, scanner and metadata **planned** ·
+**Status:** data layer shipped · scan/import MVP shipped · metadata and depth **planned** ·
 **Sources:** [`src-tauri/src/data/db.rs`](../../src-tauri/src/data/db.rs),
 [`src/lib/library-types.ts`](../../src/lib/library-types.ts),
 [`src/lib/library-api.ts`](../../src/lib/library-api.ts) ·
@@ -56,19 +56,26 @@ the browser build stays usable.
 - Derived, never stored: **missing** (volume online, path gone), **offline** (volume not connected),
   **duplicate** (more than one copy), **unlinked** (scanned file with no item).
 
-## Scanning (planned)
+## Scanning (MVP shipped)
 
-The flow is specified in [LIBRARY.md §6](../resources/LIBRARY.md): choose roots per volume, walk
-the tree read-only, parse filenames into title/season/episode/quality, group files, match to items,
-and send ambiguous files to a review queue. Rescans are incremental and idempotent. The database
-already supports everything the scanner needs.
+Implemented:
+
+- Native folder picker (`rfd`) and recursive walker with a 5,000-file budget.
+- Extension classification: video/book/music; `SxxExx` switches video to `series`.
+- Review list with select-all and per-file checkboxes.
+- Import creates items, copies and volumes through the existing write functions.
+- Volume-relative paths; duplicate detection by `volumeId + relPath`.
+- Unit test for recursive scan and classification.
+
+Not yet: volume GUID/serial identity, incremental rescans, filename parsing into season/episode/
+quality, grouping episodes into one series, or a health/missing state.
 
 ## Milestones
 
 | Milestone | Scope | State |
 | --- | --- | --- |
-| **M1 — Catalog** | kinds nav, item grid/table, volumes, wishlist, search, detail | not started |
-| **M2 — Scanner** | volume detection, roots, walker, filename parsing, review queue, health | not started |
+| **M1 — Catalog** | kinds nav, item grid/table, volumes, wishlist, search, detail | partial (grid + volumes) |
+| **M2 — Scanner** | volume detection, roots, walker, filename parsing, review queue, health | partial (walk + review + import) |
 | **M3 — Metadata** | TMDB/IGDB fetch queue, covers, local cache, refresh | not started |
 | **M4 — Depth** | episode progress, playtime, ratings, saved filters | not started |
 | **M5 — Portability** | import/export, bulk edit, duplicate merge | not started |
@@ -77,13 +84,13 @@ already supports everything the scanner needs.
 
 - Schema v1 with foreign keys, indexes and six seeded kinds.
 - Rust models, snapshot query and per-entity write functions.
-- Typed frontend client that compiles and can call the commands.
-- Verified empty library tables in the live database.
+- Typed frontend client and the scan commands.
+- A Library page with folder scan, review, import, item grid and volume list.
 
 ## What does not exist yet
 
-- Any Library UI or navigation.
-- Volume detection / drive polling.
-- File scanning and filename parsing.
+- Volume detection by GUID/serial and drive polling.
+- Filename parsing into season/episode/quality and episode grouping.
 - Metadata providers, covers or API keys.
 - Search across the library (FTS5 is planned).
+- Progress editing and derived missing/offline states.

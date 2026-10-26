@@ -21,8 +21,12 @@ restore.
 | Description | two lines, or “No description yet.” |
 | Progress | `done of total tasks done`, percentage and a bar in the project colour |
 | Task | opens the issue dialog pre-assigned to this project |
-| Open tasks | navigates to `/issues?project=<id>` |
-| Archive | hover action (top-right); sets status to `done` |
+| Card body | left-click opens the project detail workspace |
+| Details | navigates to `/projects/<id>` |
+| Tasks | navigates to `/issues?project=<id>` |
+| ⋯ / right-click | open, issues, new issue, archive/restore, delete |
+
+![Project context menu](../preview-project-menu.png)
 
 Progress is derived from issues with that `projectId`; the bar is colour-coded per project, not
 per completion state.
@@ -46,7 +50,29 @@ word. Keys are not editable after creation in this version.
 - Restore sets `status = active`; the project returns to the grid.
 - Tasks are never deleted or reassigned by either action — they keep their `projectId` and remain
   visible on the Issues page.
-- There is no delete for projects yet; archiving is the safe path.
+
+
+
+## Deleting a project
+
+- **⋯ → Delete project**, or right-click the card; archived rows also expose a trash button.
+- A dialog asks what happens to the issues and notes:
+  - **Move to Inbox** — keep everything, unassigned.
+  - **Move to another project** — pick the destination project.
+  - **Delete them with the project** — cascade delete, explicitly confirmed as permanent.
+- Deletion is also available from the card's context menu in the archived section.
+- There is no undo yet; the activity log records `Deleted project · <name>`.
+
+## Reordering
+
+- Drag a project card onto another card to place it before that project. Order is the state order
+  and persists through the snapshot (rows load `ORDER BY rowid`).
+- Project quick links in the sidebar follow the same order.
+- Dragging is disabled from buttons and links inside the card, so Task/Details/Tasks/⋯ still work.
+- Archived projects are not draggable.
+![Delete project dialog](../preview-delete-project.png)
+
+![Project order after dragging](../preview-pointer-project.png)
 
 ## Empty states
 
@@ -56,12 +82,23 @@ word. Keys are not editable after creation in this version.
 ## Data
 
 Reads `state.projects` and `state.issues`; progress comes from `projectProgress()` in
-[`derive.ts`](../../src/lib/derive.ts). Creation and status changes go through `addProject` and
-`updateProject` in the store.
+[`derive.ts`](../../src/lib/derive.ts). Creation, status changes and deletion go through
+`addProject`, `updateProject` and `deleteProject` in the store.
 
 ## Known gaps
 
-- No project detail page (description, notes, milestones, activity).
-- No editing of name, colour, description or target date after creation.
+- No project edit dialog yet (name, colour, target date are fixed after creation).
 - Paused is displayed but there is no control to pause/unpause yet.
 - Notes cannot be filtered by project from this page.
+## Example project
+
+**Axiom Core** is tracked in the workspace itself, so the roadmap and the bug list live where the work
+happens rather than in a separate document. It uses the `AXI` key and the rose project colour.
+
+- 10 issues: 3 done, 5 todo, 1 in progress, 1 backlog.
+- Bugs are labelled `bug`; features are labelled `feature`; design/audit work uses `design`.
+- AXI-18 records the top-bar theme menu overflow, including the fix.
+
+![Axiom Core project](../preview-projects.png)
+
+![Axiom Core issues](../preview-axiom-issues.png)

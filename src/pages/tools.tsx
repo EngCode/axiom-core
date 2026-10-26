@@ -12,14 +12,12 @@ import { Button, Card, CardHeader, PageHeader } from '@/components/ui'
 import { ThemePicker } from '@/components/theme-picker'
 import { useApp } from '@/lib/store'
 import { themeMeta } from '@/lib/themes'
-import { useUI } from '@/lib/ui'
 
 //=====> Tools Page <=====//
 
 export default function ToolsPage() {
   //===> Read App State & UI Actions <===//
   const { state, resetData } = useApp()
-  const { openSettings } = useUI()
 
   //===> Derive Display Values <===//
   const theme = themeMeta(state.theme)
@@ -65,16 +63,16 @@ export default function ToolsPage() {
 
         {/*=====> Personalization <=====*/}
         <Card>
-          <CardHeader title="Personalization" hint={`${identity.ownerName} · ${identity.workspaceName}`} />
+          <CardHeader title="Settings" hint={`${identity.ownerName} · ${identity.workspaceName}`} />
           <div className="px-4 pb-4">
             <p className="text-[12.5px] leading-5 text-fg-muted">
               Rename <span className="text-fg">{identity.appName}</span>, the workspace and the owner. Changes apply to
               the whole shell immediately.
             </p>
-            <Button variant="secondary" size="sm" className="mt-3" onClick={openSettings}>
+            <Link to="/settings" className="mt-3 inline-flex h-8 items-center gap-1.5 rounded-control border border-line bg-surface-2 px-2.5 text-[12.5px] font-medium text-fg transition-colors hover:border-line-strong hover:bg-surface-3">
               <Settings2 className="size-3.5" />
-              Edit identity
-            </Button>
+              Open settings
+            </Link>
           </div>
         </Card>
 

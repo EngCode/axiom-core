@@ -5,52 +5,60 @@
 [`src/components/theme-picker.tsx`](../../src/components/theme-picker.tsx) ·
 **Full reference:** [DESIGN.md](../resources/DESIGN.md)
 
-Every colour, radius and display font in the UI is a semantic token. A theme is a set of values
-for those tokens; components never know which theme is active.
+Every colour, radius and font in the UI is a semantic token. A theme is a set of values for those
+tokens; components never know which theme is active.
 
 ## Shipped themes
 
-| Theme | Mode | Character | Display font | Radius card / control |
-| --- | --- | --- | --- | --- |
-| **Axiom** | dark | violet on near-black (default) | Inter | 12 / 8 px |
-| **Paper** | light | warm paper, rust accent, serif headings | Georgia | 6 / 4 px |
-| **Graphite** | dark | neutral dark, cyan accent | Inter | 8 / 6 px |
+| Theme | Mode | Character | Body font | Display font | Radius card / control |
+| --- | --- | --- | --- | --- | --- |
+| **Classic** | dark | crimson on near-black (default) | Inter | Inter | 12 / 8 px |
+| **Paper** | light | warm paper, rust accent, editorial | Inter | Georgia | 6 / 4 px |
+| **Terminal** | dark | phosphor green, square, monospace, faint scanline | JetBrains Mono | JetBrains Mono | 3 / 2 px |
+
+![Terminal theme](../preview-terminal.png)
 
 ## Switching
 
-- Palette icon in the **sidebar footer** (menu opens upwards) or in the **top bar** (downwards).
+- **Settings → Appearance** shows theme cards with swatches (also reachable from Tools).
+- Palette icon in the **sidebar footer** (opens upwards) or in the **top bar** (downwards).
 - Command palette → *Theme: \<name\>* cycles to the next theme.
-- The menu lists all themes with a three-swatch preview, name and description; `Esc` or an
-  outside click closes it.
+- `?theme=terminal` (or `paper`, `classic`) previews a theme on load without using the picker;
+  useful for screenshots and design checks.
 
 ## How a theme applies
 
-1. `index.html` runs a tiny pre-paint script: reads `axiom.state.v1` from localStorage, normalises
-   the theme id, sets `data-theme` on `<html>` and toggles the `dark` class. This avoids a flash of
-   the wrong theme.
-2. `AppProvider` repeats the same logic whenever the theme changes: sets `data-theme` and the
-   `dark` class based on the registry’s `mode`.
-3. CSS blocks `[data-theme='…']` in `index.css` define the token values. Tailwind utilities such as
-   `bg-surface` and `text-fg-muted` resolve through `@theme inline`.
-4. The theme id is persisted in `AppState.theme` → localStorage and SQLite (`meta.theme`).
+1. `index.html` runs a pre-paint script: reads `axiom.state.v1` (falling back to the legacy key),
+   normalises the theme id, sets `data-theme` on `<html>` and toggles the `dark` class. No flash.
+2. `AppProvider` repeats the logic when the theme changes.
+3. CSS blocks `[data-theme='…']` define the values; Tailwind utilities such as `bg-surface`,
+   `text-fg-muted`, `rounded-card` and `font-display` resolve through them.
+4. The id is persisted in `AppState.theme` → localStorage and SQLite (`meta.theme`).
 
-Legacy `dark` / `light` values are mapped to `axiom` / `paper` on load.
+Legacy ids `dark`, `light`, `orbit`, `axiom` and `graphite` are mapped to `classic` / `paper` on
+load, so old saves keep working.
 
 ## Adding a theme
 
-1. Add a `[data-theme='…']` block in `src/index.css` with **all** semantic tokens, the display
-   font and both radii.
+1. Add a `[data-theme='key']` block in `src/index.css` with **all** tokens: canvas/surfaces, lines,
+   foreground levels, accent trio, status colours, both radii and the sans/display fonts.
 2. Add an entry to `THEMES` in `src/lib/themes.ts` (id, name, description, mode, three swatches).
-3. Done: picker, palette, pre-paint script and persistence all read from that list.
+3. Done: picker, palette, pre-paint script, previews and persistence read from that list.
 
 ## Design explorations
 
-`design/paper.html` and `design/terminal.html` are static mockups of two directions. Rendered
-versions live in `docs/style-paper.png` and `docs/style-terminal.png`. The Paper theme borrows the
-first one’s palette and serif display; the terminal direction is not a theme yet.
+`design/terminal.html` started as a static mockup; the shipped **Terminal** theme turns that
+direction into real tokens (monospace body, phosphor green, square radii, scanline).
+`design/paper.html` informed the Paper theme.
+
+## Background layer
+
+Settings → Appearance can add a decorative layer behind the UI: grid, dots, glow or an image URL,
+with 0–40 % opacity and a window/content scope. Patterns derive from the theme's foreground colour
+(color-mix), images blend with soft-light. Values persist in meta and never overlay content.
 
 ## Known gaps
 
-- No custom user themes, import/export of themes, or per-workspace themes.
-- No automatic following of the Windows light/dark setting.
-- The terminal direction would need monospace UI and glyph statuses, not just token changes.
+- No custom user themes or theme import/export.
+- RTL works through logical utilities, but no Arabic copy yet.
+- Theme-specific illustrations (beyond the logo) are not themed.
