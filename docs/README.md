@@ -53,6 +53,7 @@ Unknown routes redirect to the dashboard.
 | In-app documentation | shipped | [in-app-docs.md](features/in-app-docs.md) | `src/pages/docs.tsx`, `src/lib/docs.ts` |
 | Personalization | shipped | [personalization.md](features/personalization.md) | `src/lib/identity.ts`, `src/pages/settings.tsx` |
 | Project workspace | shipped | [project-detail.md](pages/project-detail.md) | `src/pages/project-detail.tsx`, `src/lib/actions.ts` |
+| Installer | test build | [installer.md](features/installer.md) | `src-tauri/tauri.conf.json`, `src-tauri/resources/seed/` |
 | Core API v1 | shipped | [CORE-API.md](resources/CORE-API.md) | `src-tauri/src/data/api.rs`, `src/lib/core-api.ts` |
 | Settings & appearance | shipped | [settings.md](pages/settings.md) | `src/pages/settings.tsx`, `src/lib/appearance.ts` |
 

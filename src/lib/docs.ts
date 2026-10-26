@@ -50,6 +50,7 @@ const ORDER: string[] = [
   'features/issue-dialog',
   'features/quick-capture',
   'features/themes',
+  'features/installer',
   'features/persistence',
   'features/keyboard',
   'features/media-library',

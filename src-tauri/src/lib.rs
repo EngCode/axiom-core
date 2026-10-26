@@ -414,6 +414,17 @@ pub fn run() {
             };
             let database_path = data_dir.join("axiom.db");
             let legacy_database = data_dir.join("orbit.db");
+
+            //===> First Run: Adopt The Bundled Workspace Seed <===//
+            if !database_path.exists() {
+                if let Ok(resource_dir) = app.path().resource_dir() {
+                    let seed = resource_dir.join("seed").join("axiom.db");
+                    if seed.exists() {
+                        let _ = std::fs::create_dir_all(&data_dir);
+                        let _ = std::fs::copy(seed, &database_path);
+                    }
+                }
+            }
             if !database_path.exists() && legacy_database.exists() {
                 let _ = std::fs::rename(&legacy_database, &database_path);
                 let _ = std::fs::rename(data_dir.join("orbit.db-wal"), data_dir.join("axiom.db-wal"));

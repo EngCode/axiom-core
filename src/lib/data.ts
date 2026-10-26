@@ -702,6 +702,46 @@ const seedIssues: SeedIssue[] = [
     labels: ['feature', 'tasks'],
     dueDate: null,
     createdDaysAgo: 0,
+  },
+  {
+    id: 'i-api-48',
+    key: 'AXI-48',
+    title: 'Windows installer with first-run workspace',
+    description:
+      'NSIS installer built and smoke-tested: per-user install, bundled workspace seed, current Axiom tasks and docs.',
+    status: 'done',
+    priority: 'high',
+    projectId: 'p-axiom',
+    labels: ['release', 'desktop'],
+    dueDate: null,
+    createdDaysAgo: 0,
+    completedDaysAgo: 0,
+  },
+  {
+    id: 'i-api-49',
+    key: 'AXI-49',
+    title: 'Record the media libraries',
+    description:
+      'Import D:\\Movies Library, D:\\Series Library and D:\\Games through the configurable scanner, review duplicates and correct the first real library.',
+    status: 'todo',
+    priority: 'high',
+    projectId: 'p-axiom',
+    labels: ['media', 'library'],
+    dueDate: null,
+    createdDaysAgo: 0,
+  },
+  {
+    id: 'i-api-50',
+    key: 'AXI-50',
+    title: 'Installer signing and update channel',
+    description:
+      'Code-sign the installer and add an update path once the test build stabilises.',
+    status: 'todo',
+    priority: 'low',
+    projectId: 'p-axiom',
+    labels: ['release', 'security'],
+    dueDate: null,
+    createdDaysAgo: 0,
   },]
 
 const issues: Issue[] = seedIssues.map(({ createdDaysAgo, completedDaysAgo, ...issue }) => {
@@ -984,6 +1024,6 @@ export function createSeedState(): AppState {
       { id: 'a-5', kind: 'issue', message: 'Completed WEB-5 · Ship dark mode toggle', at: daysAgo(2, 16) },
       { id: 'a-6', kind: 'project', message: 'Created project · Reading list', at: daysAgo(21, 10) },
     ],
-    counters: { issue: 47 },
+    counters: { issue: 50 },
   }
 }

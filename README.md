@@ -80,6 +80,32 @@ pnpm build
 cargo build --release --features custom-protocol --manifest-path src-tauri/Cargo.toml
 ```
 
+## Install (Windows)
+
+A per-user NSIS installer is available for testing:
+
+```
+release/Axiom Core_0.1.0_x64-setup.exe
+```
+
+- **Unsigned test build** — SmartScreen may ask for *More info → Run anyway*.
+- Installs per-user, no admin prompt.
+- First launch copies the bundled workspace seed, so the Axiom Core project and docs are already
+  there.
+- Data stays at `%APPDATA%\com.axiom.core\axiom.db`; uninstalling does not delete it.
+
+Detailed test checklist: [installer.md](docs/features/installer.md).
+
+### Portable fallback
+
+If the setup does nothing when launched from the harness, use:
+
+```
+release/Axiom Core 0.1.0 portable.zip
+```
+
+Extract, then run `Start Axiom Core.cmd`. The portable build stores its workspace in `data\` and
+does not need an installer.
 | Variable | Effect |
 | --- | --- |
 | `AXIOM_START_HIDDEN=1` | Start in the tray without opening a window |
