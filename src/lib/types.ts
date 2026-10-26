@@ -91,12 +91,24 @@ export interface Appearance {
   background: BackgroundSettings
   pageBackgrounds: Record<string, BackgroundSettings>
 }
+export type FolderKind = 'notes' | 'documents'
+
+export interface FolderRecord {
+  id: string
+  name: string
+  kind: FolderKind
+  parentId: string | null
+  createdAt: string
+}
+
 export interface DocumentRecord {
   id: string
   title: string
   content: string
   projectId: string | null
   pinned: boolean
+  folderId?: string | null
+  parentId?: string | null
   createdAt: string
   updatedAt: string
 }
@@ -147,6 +159,8 @@ export interface AppState {
   milestones: Milestone[]
   issueExtras: Record<string, IssueExtras>
   taskLinks: Record<string, string>
+  folders: FolderRecord[]
+  noteFolders: Record<string, string>
   activity: ActivityEntry[]
   counters: {
     issue: number

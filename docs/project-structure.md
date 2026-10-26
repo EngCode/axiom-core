@@ -4,7 +4,7 @@ Axiom Core is two applications in one repository: a React frontend and a Rust/Ta
 Both live side by side so the UI can be developed in a browser and shipped inside the desktop app.
 
 ```text
-personal-manager/
+axiom-core/
 ├── index.html                 Vite entry, first-paint theme script
 ├── package.json               frontend scripts and dependencies
 ├── vite.config.ts             dev server (5273, strict), React + Tailwind plugins
@@ -42,6 +42,9 @@ personal-manager/
 │   │   ├── markdown.tsx       dependency-free docs renderer
 │   │   ├── context-menu.tsx   viewport-clamped action menu
 │   │   ├── delete-project-dialog.tsx  inbox / move / cascade choices
+│   │   ├── folder-tree.tsx    nested folders for notes and documents
+│   │   ├── document-explorer.tsx page tree with folders
+│   │   ├── library-tree.tsx   volume/folder tree for the Library
 │   │   ├── drag-overlay.tsx    floating drag label
 │   │   ├── app-background.tsx  theme-aware background layer
 │   │   └── command-palette.tsx  ⌘K palette

@@ -28,6 +28,8 @@ import type {
   AppState,
   BackgroundSettings,
   Attachment,
+  FolderKind,
+  FolderRecord,
   IssueExtras,
   DocumentRecord,
   Milestone,
@@ -75,6 +77,10 @@ type Action =
   | { type: 'milestone/update'; id: string; patch: Partial<Milestone> }
   | { type: 'milestone/delete'; id: string }
   | { type: 'milestone/toggle'; id: string }
+  | { type: 'folder/add'; folder: FolderRecord }
+  | { type: 'folder/update'; id: string; patch: Partial<FolderRecord> }
+  | { type: 'folder/remove'; id: string }
+  | { type: 'noteFolder/set'; noteId: string; folderId: string | null }
 
 function withActivity(
   state: AppState,
@@ -339,6 +345,47 @@ function reducer(state: AppState, action: Action): AppState {
       else delete links[action.key]
       return { ...state, taskLinks: links }
     }
+    case 'folder/add':
+      return { ...state, folders: [...state.folders, action.folder] }
+
+    case 'folder/update':
+      return {
+        ...state,
+        folders: state.folders.map((folder) =>
+          folder.id === action.id ? { ...folder, ...action.patch } : folder,
+        ),
+      }
+
+    case 'folder/remove': {
+      const folder = state.folders.find((candidate) => candidate.id === action.id)
+      if (!folder) return state
+      const parentId = folder.parentId
+      const noteFolders = { ...state.noteFolders }
+      for (const [noteId, folderId] of Object.entries(noteFolders)) {
+        if (folderId !== action.id) continue
+        if (parentId) noteFolders[noteId] = parentId
+        else delete noteFolders[noteId]
+      }
+      return {
+        ...state,
+        folders: state.folders
+          .filter((candidate) => candidate.id !== action.id)
+          .map((candidate) =>
+            candidate.parentId === action.id ? { ...candidate, parentId } : candidate,
+          ),
+        documents: state.documents.map((document) =>
+          document.folderId === action.id ? { ...document, folderId: parentId } : document,
+        ),
+        noteFolders,
+      }
+    }
+
+    case 'noteFolder/set': {
+      const noteFolders = { ...state.noteFolders }
+      if (action.folderId) noteFolders[action.noteId] = action.folderId
+      else delete noteFolders[action.noteId]
+      return { ...state, noteFolders }
+    }
     case 'theme/set':
       return { ...state, theme: action.theme }
 
@@ -434,10 +481,19 @@ interface AppContextValue {
   updateNote: (id: string, patch: Partial<Note>) => void
   deleteNote: (id: string) => void
   toggleNotePin: (id: string) => void
-  addDocument: (input?: { title?: string; projectId?: string | null }) => string
+  addDocument: (input?: {
+    title?: string
+    projectId?: string | null
+    folderId?: string | null
+    parentId?: string | null
+  }) => string
   updateDocument: (id: string, patch: Partial<DocumentRecord>) => void
   deleteDocument: (id: string) => void
   toggleDocumentPin: (id: string) => void
+  addFolder: (kind: FolderKind, name: string, parentId?: string | null) => string
+  updateFolder: (id: string, patch: Partial<FolderRecord>) => void
+  deleteFolder: (id: string) => void
+  setNoteFolder: (noteId: string, folderId: string | null) => void
   addMilestone: (input: {
     projectId: string
     title: string
@@ -717,7 +773,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   )
 
   const addDocument = useCallback(
-    (input?: { title?: string; projectId?: string | null }) => {
+    (input?: {
+      title?: string
+      projectId?: string | null
+      folderId?: string | null
+      parentId?: string | null
+    }) => {
       const id = uid()
       const now = new Date().toISOString()
       dispatch({
@@ -749,6 +810,35 @@ export function AppProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'document/pin', id })
   }, [])
 
+  const addFolder = useCallback(
+    (kind: FolderKind, name: string, parentId: string | null = null) => {
+      const id = uid()
+      dispatch({
+        type: 'folder/add',
+        folder: {
+          id,
+          name: name.trim() || 'New folder',
+          kind,
+          parentId,
+          createdAt: new Date().toISOString(),
+        },
+      })
+      return id
+    },
+    [],
+  )
+
+  const updateFolder = useCallback((id: string, patch: Partial<FolderRecord>) => {
+    dispatch({ type: 'folder/update', id, patch })
+  }, [])
+
+  const deleteFolder = useCallback((id: string) => {
+    dispatch({ type: 'folder/remove', id })
+  }, [])
+
+  const setNoteFolder = useCallback((noteId: string, folderId: string | null) => {
+    dispatch({ type: 'noteFolder/set', noteId, folderId })
+  }, [])
   const addMilestone = useCallback(
     (input: { projectId: string; title: string; dueDate?: string | null }) => {
       const id = uid()
@@ -863,6 +953,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       updateDocument,
       deleteDocument,
       toggleDocumentPin,
+      setNoteFolder,
+      deleteFolder,
+      updateFolder,
+      addFolder,
       addMilestone,
       updateMilestone,
       deleteMilestone,
@@ -902,6 +996,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       updateDocument,
       deleteDocument,
       toggleDocumentPin,
+      setNoteFolder,
+      deleteFolder,
+      updateFolder,
+      addFolder,
       addMilestone,
       updateMilestone,
       deleteMilestone,

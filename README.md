@@ -30,11 +30,11 @@ deeply:
 | --- | --- |
 | **Dashboard** | Greeting, open/overdue stats, focus list, quick add, project progress, weekly chart, activity |
 | **Projects** | Colour-coded cards, target dates, progress, detail workspace, archive/restore, delete with item choices |
-| **Tasks** | Checklists, subtasks, attachments, rich descriptions, status groups, drag reorder, context menus |
+| **Tasks** | Nested subtasks, checklists, attachments, rich descriptions, hierarchy-aware drag sorting, context menus |
 | **Milestones** | Due dates, status, linked tasks and completion rollup inside a project |
-| **Documents** | Rich-text editor, project ownership, task links, pin, search, deep links |
-| **Notes** | Two-pane rich-text notes, tags, pinning, project and task links |
-| **Library** | Folder scan with media type + depth, review, import, volume-relative copies, item grid |
+| **Documents** | Folder tree, child pages, rich-text editor, project/task links, search, deep links |
+| **Notes** | Folder tree, rich-text notes, tags, pinning, project and task links |
+| **Library** | Volume/folder tree, scoped search, configurable scanning, review, import, item grid |
 | **User / themes** | Profile, Classic/Paper/Terminal, local or per-page backgrounds, help, data reset |\n| **Tools** | Local image resize, convert, tint and palette extraction |
 | **Command palette** | `⌘K` / `Ctrl+K` to navigate, search or create |
 

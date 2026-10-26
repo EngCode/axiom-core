@@ -51,6 +51,15 @@ you are currently looking at. Filter state other than project lives in memory an
 - The dialog is documented in [issue-dialog.md](../features/issue-dialog.md).
 - The status circle is the fastest path: one click completes; another restores to todo.
 
+## Subtasks in the list
+
+A subtask is rendered directly under its parent, with indentation and a vertical guide. The parent
+shows a total subtask count, and the status group count includes descendants. Subtasks complete
+with their own status circle; they do not move into another status group.
+
+Dragging is hierarchy-aware: root tasks reorder within their status group, subtasks reorder only
+among siblings. The drop target is a vertical accent rail on the leading edge of the row, not a
+whole-row replacement highlight.
 ## Rich task content
 
 Inside the edit dialog an existing task has three extra surfaces:

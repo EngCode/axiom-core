@@ -333,6 +333,12 @@ pub fn load_state(connection: &Connection) -> Result<Option<AppState>> {
     let milestones = meta_value(connection, "milestones")?
         .and_then(|value| serde_json::from_str(&value).ok())
         .unwrap_or_default();
+    let folders = meta_value(connection, "folders")?
+        .and_then(|value| serde_json::from_str(&value).ok())
+        .unwrap_or_default();
+    let note_folders = meta_value(connection, "noteFolders")?
+        .and_then(|value| serde_json::from_str(&value).ok())
+        .unwrap_or_default();
 
     let appearance = Appearance {
         background: BackgroundSettings {
@@ -365,6 +371,8 @@ pub fn load_state(connection: &Connection) -> Result<Option<AppState>> {
         notes,
         documents,
         milestones,
+        folders,
+        note_folders,
         issue_extras,
         task_links,
         activity,
@@ -466,6 +474,16 @@ pub fn save_state(connection: &mut Connection, state: &AppState) -> Result<()> {
         &transaction,
         "milestones",
         &serde_json::to_string(&state.milestones).unwrap_or_else(|_| "[]".to_string()),
+    )?;
+    set_meta(
+        &transaction,
+        "folders",
+        &serde_json::to_string(&state.folders).unwrap_or_else(|_| "[]".to_string()),
+    )?;
+    set_meta(
+        &transaction,
+        "noteFolders",
+        &serde_json::to_string(&state.note_folders).unwrap_or_else(|_| "{}".to_string()),
     )?;
 
     set_meta(

@@ -18,13 +18,26 @@ import {
   PageHeader,
   Select,
 } from '@/components/ui'
+import { FolderTree } from '@/components/folder-tree'
 import { sortNotes } from '@/lib/derive'
 import { RichTextEditor, plainText } from '@/lib/rich-text'
 import { useApp } from '@/lib/store'
 import { cn, formatRelative, truncate } from '@/lib/utils'
 
 export default function NotesPage() {
-  const { state, addNote, updateNote, deleteNote, toggleNotePin, linkTask } = useApp()
+  const {
+    state,
+    addNote,
+    updateNote,
+    deleteNote,
+    toggleNotePin,
+    linkTask,
+    addFolder,
+    updateFolder,
+    deleteFolder,
+    setNoteFolder,
+  } = useApp()
+  const [folderId, setFolderId] = useState<string | null>(null)
   const [searchParams, setSearchParams] = useSearchParams()
   const [query, setQuery] = useState('')
   const [tagDraft, setTagDraft] = useState('')
@@ -32,19 +45,46 @@ export default function NotesPage() {
 
   const ordered = useMemo(() => sortNotes(state.notes), [state.notes])
   const selectedId = searchParams.get('note')
-  const selected = ordered.find((note) => note.id === selectedId) ?? ordered[0] ?? null
+
+
+  const folderScope = useMemo(() => {
+    if (!folderId) return null
+    const ids = new Set<string>()
+    const visit = (id: string) => {
+      if (ids.has(id)) return
+      ids.add(id)
+      for (const folder of state.folders) {
+        if (folder.parentId === id) visit(folder.id)
+      }
+    }
+    visit(folderId)
+    return ids
+  }, [folderId, state.folders])
+
+  const folderCounts = useMemo(() => {
+    const result: Record<string, number> = {}
+    for (const note of state.notes) {
+      const assigned = state.noteFolders[note.id]
+      if (assigned) result[assigned] = (result[assigned] ?? 0) + 1
+    }
+    return result
+  }, [state.notes, state.noteFolders])
+
+  const filtered = useMemo(() => {
+    const needle = query.trim().toLowerCase()
+    return ordered.filter((note) => {
+      if (folderScope && !folderScope.has(state.noteFolders[note.id] ?? '')) return false
+      if (!needle) return true
+      return `${note.title} ${note.content} ${note.tags.join(' ')}`
+        .toLowerCase()
+        .includes(needle)
+    })
+  }, [folderScope, ordered, query, state.noteFolders])
+  const selected = filtered.find((note) => note.id === selectedId) ?? filtered[0] ?? null
 
   useEffect(() => {
     setTagDraft('')
   }, [selected?.id])
-
-  const filtered = useMemo(() => {
-    const needle = query.trim().toLowerCase()
-    if (!needle) return ordered
-    return ordered.filter((note) =>
-      `${note.title} ${note.content} ${note.tags.join(' ')}`.toLowerCase().includes(needle),
-    )
-  }, [ordered, query])
 
   const wantsNewNote = searchParams.get('new')
 
@@ -61,6 +101,7 @@ export default function NotesPage() {
 
   function createNote() {
     const id = addNote()
+    if (folderId) setNoteFolder(id, folderId)
     setSearchParams({ note: id }, { replace: true })
   }
 
@@ -98,6 +139,20 @@ export default function NotesPage() {
 
       <div className="grid gap-4 lg:h-[calc(100vh-13rem)] lg:min-h-[540px] lg:grid-cols-[290px_1fr]">
         <Card className="flex min-h-0 flex-col overflow-hidden">
+          <FolderTree
+            folders={state.folders}
+            kind="notes"
+            selectedId={folderId}
+            onSelect={setFolderId}
+            counts={folderCounts}
+            total={state.notes.length}
+            onCreate={(parentId, name) => {
+              addFolder('notes', name, parentId)
+            }}
+            onRename={(folder, name) => updateFolder(folder.id, { name })}
+            onDelete={(folder) => deleteFolder(folder.id)}
+          />
+
           <div className="flex items-center gap-1.5 border-b border-line p-2.5">
             <div className="relative min-w-0 flex-1">
               <Search className="pointer-events-none absolute top-1/2 start-2.5 size-3.5 -translate-y-1/2 text-fg-subtle" />
@@ -161,10 +216,25 @@ export default function NotesPage() {
         {selected ? (
           <Card className="flex min-h-0 flex-col overflow-hidden">
             <div className="flex shrink-0 items-center gap-2 border-b border-line px-4 py-2">
-              <span className="text-[10.5px] text-fg-subtle">
+              <span className="shrink-0 whitespace-nowrap text-[10.5px] text-fg-subtle">
                 {selected.pinned ? 'Pinned' : 'Note'} · saved {formatRelative(selected.updatedAt)}
               </span>
               <div className="ms-auto flex items-center gap-1.5">
+                <Select
+                  value={state.noteFolders[selected.id] ?? ''}
+                  onChange={(event) => setNoteFolder(selected.id, event.target.value || null)}
+                  aria-label="Note folder"
+                  className="h-6 w-auto min-w-[104px] border-transparent bg-transparent pr-6 text-[10.5px] text-fg-subtle hover:border-line"
+                >
+                  <option value="">No folder</option>
+                  {state.folders
+                    .filter((folder) => folder.kind === 'notes')
+                    .map((folder) => (
+                      <option key={folder.id} value={folder.id}>
+                        {folder.name}
+                      </option>
+                    ))}
+                </Select>
                 <Select
                   value={selected.projectId ?? ''}
                   onChange={(event) => updateNote(selected.id, { projectId: event.target.value || null })}

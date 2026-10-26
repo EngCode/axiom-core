@@ -5,7 +5,7 @@
 
 import { DEFAULT_APPEARANCE } from './appearance'
 import { DEFAULT_IDENTITY } from './identity'
-import type { AppState, DocumentRecord, Issue, Milestone, Note, Project } from './types'
+import type { AppState, DocumentRecord, FolderRecord, Issue, Milestone, Note, Project } from './types'
 import { addDaysISO } from './utils'
 
 export const STORAGE_KEY = 'axiom.state.v1'
@@ -742,7 +742,78 @@ const seedIssues: SeedIssue[] = [
     labels: ['release', 'security'],
     dueDate: null,
     createdDaysAgo: 0,
-  },]
+  },
+  {
+    id: 'i-api-51',
+    key: 'AXI-51',
+    title: 'Rename repository and package to axiom-core',
+    description:
+      'Project root renamed from personal-manager to axiom-core; package.json name updated; source references cleaned.',
+    status: 'done',
+    priority: 'low',
+    projectId: 'p-axiom',
+    labels: ['release', 'repo'],
+    dueDate: null,
+    createdDaysAgo: 0,
+    completedDaysAgo: 0,
+  },
+  {
+    id: 'i-api-52',
+    key: 'AXI-52',
+    title: 'Nested subtasks with hierarchical drag sorting',
+    description:
+      'Render subtasks under their parent in the issue list, let siblings sort with the pointer handles, and make the drop indicator vertical and unambiguous.',
+    status: 'done',
+    priority: 'high',
+    projectId: 'p-axiom',
+    labels: ['feature', 'tasks'],
+    dueDate: null,
+    createdDaysAgo: 0,
+    completedDaysAgo: 0,
+  },
+  {
+    id: 'i-api-53',
+    key: 'AXI-53',
+    title: 'Notes and documents folder hierarchy',
+    description:
+      'Add folders and nested pages for notes and documents, with project/task context carried through the tree.',
+    status: 'done',
+    priority: 'high',
+    projectId: 'p-axiom',
+    labels: ['feature', 'notes', 'documents'],
+    dueDate: null,
+    createdDaysAgo: 0,
+    completedDaysAgo: 0,
+  },
+  {
+    id: 'i-api-54',
+    key: 'AXI-54',
+    title: 'Folder tree navigation in the Library',
+    description:
+      'Mirror storage folders above the item list, navigate by volume/folder, and keep search and filters scoped to the selected branch.',
+    status: 'done',
+    priority: 'medium',
+    projectId: 'p-axiom',
+    labels: ['feature', 'library'],
+    dueDate: null,
+    createdDaysAgo: 0,
+    completedDaysAgo: 0,
+  },
+  {
+    id: 'i-api-55',
+    key: 'AXI-55',
+    title: 'Render nested subtasks in the issue list',
+    description:
+      'Show child tasks under the parent, indent them, and allow sibling sorting without changing their status group.',
+    status: 'done',
+    priority: 'high',
+    projectId: 'p-axiom',
+    labels: ['feature', 'tasks'],
+    dueDate: null,
+    createdDaysAgo: 0,
+    completedDaysAgo: 0,
+  },
+]
 
 const issues: Issue[] = seedIssues.map(({ createdDaysAgo, completedDaysAgo, ...issue }) => {
   const createdAt = daysAgo(createdDaysAgo, 9)
@@ -876,6 +947,59 @@ The same shape can later be backed by Tauri commands.
   },]
 
 
+const folders: FolderRecord[] = [
+  {
+    id: 'df-axiom',
+    name: 'Axiom Core',
+    kind: 'documents',
+    parentId: null,
+    createdAt: daysAgo(20),
+  },
+  {
+    id: 'df-axiom-api',
+    name: 'API',
+    kind: 'documents',
+    parentId: 'df-axiom',
+    createdAt: daysAgo(18),
+  },
+  {
+    id: 'df-writing',
+    name: 'Writing',
+    kind: 'documents',
+    parentId: null,
+    createdAt: daysAgo(12),
+  },
+  {
+    id: 'nf-planning',
+    name: 'Planning',
+    kind: 'notes',
+    parentId: null,
+    createdAt: daysAgo(20),
+  },
+  {
+    id: 'nf-review',
+    name: 'Reviews',
+    kind: 'notes',
+    parentId: null,
+    createdAt: daysAgo(20),
+  },
+  {
+    id: 'nf-reading',
+    name: 'Reading',
+    kind: 'notes',
+    parentId: null,
+    createdAt: daysAgo(20),
+  },
+]
+
+const noteFolders: Record<string, string> = {
+  'n-1': 'nf-review',
+  'n-2': 'nf-planning',
+  'n-3': 'nf-reading',
+  'n-4': 'nf-review',
+  'n-5': 'nf-reading',
+  'n-axiom-plan': 'nf-planning',
+}
 const documents: DocumentRecord[] = [
   {
     id: 'd-axiom-brief',
@@ -898,6 +1022,8 @@ const documents: DocumentRecord[] = [
 - No bundled browser engine.
 - Offline first; no telemetry.`,
     projectId: 'p-axiom',
+    folderId: 'df-axiom',
+    parentId: null,
     pinned: true,
     createdAt: daysAgo(2),
     updatedAt: daysAgo(0, 9),
@@ -924,6 +1050,8 @@ const documents: DocumentRecord[] = [
 - Project update/delete and issue reorder.
 - Milestones and project documents.`,
     projectId: 'p-axiom',
+    folderId: 'df-axiom-api',
+    parentId: null,
     pinned: false,
     createdAt: daysAgo(1),
     updatedAt: daysAgo(0, 8),
@@ -937,11 +1065,29 @@ const documents: DocumentRecord[] = [
 - Say what the user can do now, then what is planned.
 - A bug note names the symptom, the cause and the fix.`,
     projectId: null,
+    folderId: 'df-writing',
+    parentId: null,
     pinned: false,
     createdAt: daysAgo(12),
     updatedAt: daysAgo(4),
   },
-]
+  {
+    id: 'd-core-api-examples',
+    title: 'Core API examples',
+    content: `# Core API examples
+
+A child page under the contract. Keep examples here so the parent page stays a reference.
+
+- Read the snapshot before mutating.
+- Close a task with a status patch.
+- Create a task and keep the returned key.`,
+    projectId: 'p-axiom',
+    folderId: 'df-axiom-api',
+    parentId: 'd-core-api',
+    pinned: false,
+    createdAt: daysAgo(0, 6),
+    updatedAt: daysAgo(0, 6),
+  },]
 
 const milestones: Milestone[] = [
   {
@@ -1008,7 +1154,10 @@ export function createSeedState(): AppState {
         attachments: [],
         parentId: null,
       },
+      'i-api-55': { checklist: [], attachments: [], parentId: 'i-api-52' },
     },
+    folders,
+    noteFolders,
     taskLinks: {
       'note:n-axiom-plan': 'i-axiom-16',
       'doc:d-core-api': 'i-axiom-16',
@@ -1024,6 +1173,6 @@ export function createSeedState(): AppState {
       { id: 'a-5', kind: 'issue', message: 'Completed WEB-5 · Ship dark mode toggle', at: daysAgo(2, 16) },
       { id: 'a-6', kind: 'project', message: 'Created project · Reading list', at: daysAgo(21, 10) },
     ],
-    counters: { issue: 50 },
+    counters: { issue: 55 },
   }
 }

@@ -6,10 +6,11 @@
 //=====> Imports & Helpers <=====//
 
 import { useEffect, useMemo, useState } from 'react'
-import { FolderSearch, Library, RefreshCw } from 'lucide-react'
+import { FolderSearch, Library, RefreshCw, Search } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
-import { Button, Card, CardHeader, EmptyState, PageHeader } from '@/components/ui'
+import { LibraryTree } from '@/components/library-tree'
+import { Button, Card, CardHeader, EmptyState, Input, PageHeader } from '@/components/ui'
 import { attachMediaCopy, loadLibrary, saveMediaItem, upsertVolume } from '@/lib/library-api'
 import {
   pickMediaFolder,
@@ -52,6 +53,8 @@ export default function LibraryPage() {
   const [scanType, setScanType] = useState<ScanMediaType>('all')
   const [importing, setImporting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [query, setQuery] = useState('')
+  const [selectedFolder, setSelectedFolder] = useState<string | null>(null)
 
   //===> Load Library <===//
   async function refresh() {
@@ -175,6 +178,30 @@ export default function LibraryPage() {
     () => new Map((snapshot?.kinds ?? []).map((kind) => [kind.id, kind])),
     [snapshot],
   )
+  const visibleItems = useMemo(() => {
+    const needle = query.trim().toLowerCase()
+    const [volumeId, folderPath] = selectedFolder?.split('|') ?? ['', '']
+
+    return items.filter((item) => {
+      const itemCopies = copies.filter((copy) => copy.itemId === item.id)
+
+      //===> Folder Scope <===//
+      if (selectedFolder) {
+        const inScope = itemCopies.some((copy) => {
+          if (copy.volumeId !== volumeId) return false
+          if (!folderPath) return true
+          return copy.relPath.replace(/\\/g, '/').startsWith(`${folderPath}/`)
+        })
+        if (!inScope) return false
+      }
+
+      //===> Search <===//
+      if (!needle) return true
+      return `${item.title} ${itemCopies.map((copy) => copy.relPath).join(' ')}`
+        .toLowerCase()
+        .includes(needle)
+    })
+  }, [copies, items, query, selectedFolder])
   const toggle = (path: string) => {
     setSelected((current) => {
       const next = new Set(current)
@@ -303,6 +330,17 @@ export default function LibraryPage() {
         </Card>
       ) : null}
 
+      <Card className="relative">
+        <Search className="pointer-events-none absolute top-1/2 start-2.5 size-3.5 -translate-y-1/2 text-fg-subtle" />
+        <Input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Search titles or paths…"
+          aria-label="Search library"
+          className="h-8 ps-8 text-[12px]"
+        />
+      </Card>
+
       <div className="grid gap-2 sm:grid-cols-3">
         {[
           { label: 'Items', value: items.length },
@@ -335,32 +373,57 @@ export default function LibraryPage() {
           />
         </Card>
       ) : (
-        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-          {items.map((item) => {
-            const kind = kindById.get(item.kindId)
-            const copy = copies.find((entry) => entry.itemId === item.id)
+        <div className="grid gap-3 lg:grid-cols-[220px_minmax(0,1fr)]">
+          <LibraryTree
+            volumes={volumes}
+            copies={copies}
+            selectedKey={selectedFolder}
+            onSelect={setSelectedFolder}
+          />
 
-            return (
-              <Card key={item.id} className="p-3.5">
-                <div className="flex items-start gap-2">
-                  <span className="grid size-8 shrink-0 place-items-center rounded-control bg-surface-2 text-fg-subtle">
-                    <Library className="size-3.5" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[12.5px] font-medium text-fg">{item.title}</p>
-                    <p className="mt-0.5 text-[10px] text-fg-subtle">
-                      {kind?.name ?? item.kindId} · {item.status}
-                    </p>
-                  </div>
-                </div>
-                {copy ? (
-                  <p className="mt-2 truncate font-mono text-[9.5px] text-fg-subtle" title={copy.relPath}>
-                    {copy.relPath}
-                  </p>
-                ) : null}
+          <div>
+            {visibleItems.length === 0 ? (
+              <Card className="px-4 py-8 text-center text-[11.5px] text-fg-subtle">
+                No media matches this folder or search.
               </Card>
-            )
-          })}
+            ) : (
+              <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                {visibleItems.map((item) => {
+                  const kind = kindById.get(item.kindId)
+                  const volumeId = selectedFolder?.split('|')[0]
+                  const copy =
+                    copies.find(
+                      (entry) =>
+                        entry.itemId === item.id && (!volumeId || entry.volumeId === volumeId),
+                    ) ?? copies.find((entry) => entry.itemId === item.id)
+
+                  return (
+                    <Card key={item.id} className="p-3.5">
+                      <div className="flex items-start gap-2">
+                        <span className="grid size-8 shrink-0 place-items-center rounded-control bg-surface-2 text-fg-subtle">
+                          <Library className="size-3.5" />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[12.5px] font-medium text-fg">{item.title}</p>
+                          <p className="mt-0.5 text-[10px] text-fg-subtle">
+                            {kind?.name ?? item.kindId} · {item.status}
+                          </p>
+                        </div>
+                      </div>
+                      {copy ? (
+                        <p
+                          className="mt-2 truncate font-mono text-[9.5px] text-fg-subtle"
+                          title={copy.relPath}
+                        >
+                          {copy.relPath}
+                        </p>
+                      ) : null}
+                    </Card>
+                  )
+                })}
+              </div>
+            )}
+          </div>
         </div>
       )}
 

@@ -26,10 +26,12 @@ export interface PointerSortHandleProps {
 export function usePointerSort({
   onReorder,
   itemSelector,
+  canDrop,
   threshold = 4,
 }: {
   onReorder: (id: string, targetId: string) => void
   itemSelector: string
+  canDrop?: (id: string, targetId: string) => boolean
   threshold?: number
 }) {
   //===> Session & Visual State <===//
@@ -106,7 +108,8 @@ export function usePointerSort({
           latestPoint.current = point
           setPointer(point)
           const targetId = itemUnder(point)
-          setOverId(targetId && targetId !== id ? targetId : null)
+          const valid = targetId && targetId !== id && (!canDrop || canDrop(id, targetId))
+          setOverId(valid ? targetId : null)
         }
 
         //===> Finish Or Cancel <===//
@@ -114,7 +117,9 @@ export function usePointerSort({
           cleanup()
           if (started) {
             const targetId = itemUnder({ x: native.clientX, y: native.clientY })
-            if (targetId && targetId !== id) onReorder(id, targetId)
+            if (targetId && targetId !== id && (!canDrop || canDrop(id, targetId))) {
+              onReorder(id, targetId)
+            }
           }
           setDraggingId(null)
           setOverId(null)
@@ -149,7 +154,7 @@ export function usePointerSort({
         event.stopPropagation()
       },
     }),
-    [itemUnder, onReorder, threshold],
+    [canDrop, itemUnder, onReorder, threshold],
   )
 
   return { draggingId, overId, pointer, handleProps }

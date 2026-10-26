@@ -32,6 +32,11 @@ Tag editing details:
 - `Backspace` with an empty input removes the last tag.
 - The project selector is in the editor header on wide screens.
 
+## Folders
+
+Notes live in a folder tree above the list. Folders can nest; selecting a folder includes its
+descendants. The editor header also lets a note move between folders. Deleting a folder moves its
+notes (and child folders) to the parent; it does not delete notes.
 ## Creating, selecting and deleting
 
 - New notes are created immediately with an empty body and “Untitled note”.

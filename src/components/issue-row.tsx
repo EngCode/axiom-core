@@ -30,6 +30,7 @@ export function IssueRow({
   draggable = false,
   dragging = false,
   dropTarget = false,
+  depth = 0,
   handleProps,
 }: {
   issue: Issue
@@ -39,6 +40,8 @@ export function IssueRow({
   draggable?: boolean
   dragging?: boolean
   dropTarget?: boolean
+  /** 0 for a root task, 1 for a direct subtask. */
+  depth?: number
   handleProps?: PointerSortHandleProps
 }) {
   //===> Read State & UI <===//
@@ -92,14 +95,30 @@ export function IssueRow({
         tabIndex={0}
         data-issue-row
         data-sort-id={issue.id}
+        data-depth={depth}
+        style={{ paddingInlineStart: 12 + depth * 18 }}
         className={cn(
-          'group flex w-full items-center gap-2.5 px-3 py-[7px] transition-colors outline-none',
+          'group relative flex w-full items-center gap-2.5 py-[7px] pe-3 transition-colors outline-none',
           'hover:bg-surface-2 focus-visible:bg-surface-2',
+          depth > 0 && 'bg-surface-2/20',
           dragging && 'opacity-40',
-          dropTarget && 'bg-accent-soft/30 ring-1 ring-accent/40 ring-inset',
+          dropTarget && 'bg-accent-soft/15',
           className,
         )}
       >
+        {depth > 0 ? (
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0 w-px bg-line"
+            style={{ insetInlineStart: 8 + (depth - 1) * 18 }}
+          />
+        ) : null}
+        {dropTarget ? (
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0 start-0 w-[2px] rounded-full bg-accent"
+          />
+        ) : null}
         {draggable ? (
           <span
             role="button"

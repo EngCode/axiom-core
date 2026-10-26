@@ -10,12 +10,26 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct FolderRecord {
+    pub id: String,
+    pub name: String,
+    pub kind: String,
+    pub parent_id: Option<String>,
+    pub created_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct DocumentRecord {
     pub id: String,
     pub title: String,
     pub content: String,
     pub project_id: Option<String>,
     pub pinned: bool,
+    #[serde(default)]
+    pub folder_id: Option<String>,
+    #[serde(default)]
+    pub parent_id: Option<String>,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -77,6 +91,10 @@ pub struct AppState {
     pub documents: Vec<DocumentRecord>,
     #[serde(default)]
     pub milestones: Vec<Milestone>,
+    #[serde(default)]
+    pub folders: Vec<FolderRecord>,
+    #[serde(default)]
+    pub note_folders: HashMap<String, String>,
     #[serde(default)]
     pub issue_extras: HashMap<String, IssueExtras>,
     #[serde(default)]
