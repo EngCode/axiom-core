@@ -9,7 +9,7 @@
 //=====> Imports & Constants <=====//
 
 import { useEffect, useState, type FormEvent } from 'react'
-import { BookOpen, Check, Database, RotateCcw, Settings2, Upload } from 'lucide-react'
+import { BookOpen, Check, Copy, Database, Download, RotateCcw, Settings2, Upload } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 
 import {
@@ -26,7 +26,9 @@ import {
   BACKGROUND_SCOPES,
   DEFAULT_APPEARANCE,
 } from '@/lib/appearance'
+import { exportWorkspaceBackup, importWorkspaceBackup, restartApp } from '@/lib/backup'
 import { DEFAULT_IDENTITY } from '@/lib/identity'
+import { getLocalApiStatus, saveLocalApiConfig, type LocalApiStatus } from '@/lib/local-api'
 import { useApp } from '@/lib/store'
 import { THEMES, themeMeta } from '@/lib/themes'
 import type { BackgroundKind, BackgroundScope, BackgroundSettings, Identity } from '@/lib/types'
@@ -52,9 +54,28 @@ async function resizeBackgroundImage(file: File): Promise<string> {
 export default function UserPage() {
   //===> Read State & Actions <===//
   const { state, setTheme, updateIdentity, updateBackground, updatePageBackground, resetData } = useApp()
+  const [api, setApi] = useState<LocalApiStatus | null>(null)
+  const [apiPort, setApiPort] = useState('47615')
+  const [apiToken, setApiToken] = useState('')
+  const [apiEnabled, setApiEnabled] = useState(true)
+  const [apiBusy, setApiBusy] = useState(false)
+  const [apiNote, setApiNote] = useState<string | null>(null)
+  const [copiedToken, setCopiedToken] = useState(false)
+  const [backupBusy, setBackupBusy] = useState(false)
+  const [backupNote, setBackupNote] = useState<string | null>(null)
+  const [pendingRestart, setPendingRestart] = useState(false)
 
   //===> Define Profile Draft <===//
   const [draft, setDraft] = useState<Identity>(state.identity)
+  useEffect(() => {
+    void getLocalApiStatus().then((status) => {
+      if (!status) return
+      setApi(status)
+      setApiPort(String(status.port))
+      setApiToken(status.token)
+      setApiEnabled(status.enabled)
+    })
+  }, [])
   useEffect(() => {
     setDraft(state.identity)
   }, [state.identity])
@@ -86,6 +107,74 @@ export default function UserPage() {
     resetData()
   }
 
+  //===> Backup Actions <===//
+  async function handleExportBackup() {
+    setBackupBusy(true)
+    setBackupNote(null)
+    try {
+      const path = await exportWorkspaceBackup()
+      if (path) setBackupNote(`Backup written to ${path}`)
+    } catch (error) {
+      setBackupNote(error instanceof Error ? error.message : String(error))
+    } finally {
+      setBackupBusy(false)
+    }
+  }
+
+  async function handleImportBackup() {
+    if (
+      !window.confirm(
+        'Restore a backup? The current workspace is copied aside before the restore is applied.',
+      )
+    ) {
+      return
+    }
+    setBackupBusy(true)
+    setBackupNote(null)
+    try {
+      const path = await importWorkspaceBackup()
+      if (path) {
+        setPendingRestart(true)
+        setBackupNote(
+          'Backup staged. Restart Axiom Core to load it; the current database was preserved as a pre-import copy.',
+        )
+      }
+    } catch (error) {
+      setBackupNote(error instanceof Error ? error.message : String(error))
+    } finally {
+      setBackupBusy(false)
+    }
+  }
+  //===> Local API Actions <===//
+  async function handleSaveApi() {
+    setApiBusy(true)
+    setApiNote(null)
+    try {
+      const status = await saveLocalApiConfig({
+        enabled: apiEnabled,
+        port: Number(apiPort),
+        token: apiToken.trim(),
+      })
+      setApi(status)
+      setApiPort(String(status.port))
+      setApiToken(status.token)
+      setApiNote(
+        status.restartRequired
+          ? 'Saved. Restart Axiom Core to bind the new port; the token works immediately after restart.'
+          : 'Saved. AI clients can use this endpoint now.',
+      )
+    } catch (error) {
+      setApiNote(error instanceof Error ? error.message : String(error))
+    } finally {
+      setApiBusy(false)
+    }
+  }
+
+  function copyApiToken() {
+    void navigator.clipboard?.writeText(apiToken)
+    setCopiedToken(true)
+    window.setTimeout(() => setCopiedToken(false), 1500)
+  }
   //===> Render Page <===//
   return (
     <div className="animate-fade-in space-y-4">
@@ -332,6 +421,121 @@ export default function UserPage() {
         </form>
       </Card>
 
+      {/*=====> Local API Section <=====*/}
+      <Card>
+        <CardHeader
+          title="Local API"
+          hint={api ? (api.running ? `127.0.0.1:${api.port}` : 'not running') : 'desktop only'}
+        />
+        <div className="space-y-3 px-4 pb-4">
+          <p className="text-[12px] leading-5 text-fg-muted">
+            Let an external AI client read the workspace and update tasks over localhost. The
+            token is required on every request except the health check.
+          </p>
+
+          {api?.error ? (
+            <p className="rounded-control border border-danger/30 bg-danger/5 px-3 py-2 text-[11px] text-danger">
+              {api.error}
+            </p>
+          ) : null}
+
+          <div className="grid gap-3 sm:grid-cols-[120px_minmax(0,1fr)]">
+            <Field label="Port">
+              <Input
+                type="number"
+                min={1024}
+                max={65535}
+                value={apiPort}
+                onChange={(event) => setApiPort(event.target.value)}
+                disabled={!api}
+              />
+            </Field>
+            <Field label="Token">
+              <Input
+                value={apiToken}
+                onChange={(event) => setApiToken(event.target.value)}
+                disabled={!api}
+                className="font-mono text-[11px]"
+              />
+            </Field>
+          </div>
+
+          <label className="flex items-center gap-2 text-[11.5px] text-fg-muted">
+            <input
+              type="checkbox"
+              checked={apiEnabled}
+              onChange={(event) => setApiEnabled(event.target.checked)}
+              disabled={!api}
+              className="size-3.5 accent-[var(--accent)]"
+            />
+            Run the local API while Axiom Core is open
+          </label>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Button size="sm" variant="primary" onClick={() => void handleSaveApi()} disabled={!api || apiBusy}>
+              {apiBusy ? 'Saving…' : 'Save API settings'}
+            </Button>
+            <Button size="sm" variant="secondary" onClick={copyApiToken} disabled={!apiToken}>
+              {copiedToken ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+              {copiedToken ? 'Copied' : 'Copy token'}
+            </Button>
+            <Link
+              to="/docs?doc=resources/LOCAL-API"
+              className="text-[11px] font-medium text-accent underline decoration-accent/30 underline-offset-2"
+            >
+              AI connection guide
+            </Link>
+          </div>
+
+          {apiNote ? <p className="text-[10.5px] leading-4 text-fg-subtle">{apiNote}</p> : null}
+
+          <p className="font-mono text-[10px] text-fg-subtle">
+            http://127.0.0.1:{apiPort}/v1/snapshot · Authorization: Bearer {apiToken ? '••••' : 'token'}
+          </p>
+          <p className="text-[10px] leading-4 text-fg-subtle">
+            If the port is busy, change it here and restart Axiom Core. The workspace data is never
+            exposed beyond 127.0.0.1.
+          </p>
+        </div>
+      </Card>
+      {/*=====> Backup Section <=====*/}
+      <Card>
+        <CardHeader title="Backup & restore" hint="database · covers · attachments" />
+        <div className="space-y-3 px-4 pb-4">
+          <p className="text-[12px] leading-5 text-fg-muted">
+            Export a folder containing the SQLite workspace, library, poster files and attachments.
+            Import stages a validated backup, keeps a pre-import copy, then applies it on restart.
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              size="sm"
+              variant="primary"
+              onClick={() => void handleExportBackup()}
+              disabled={backupBusy}
+            >
+              <Download className="size-3.5" />
+              Export backup
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => void handleImportBackup()}
+              disabled={backupBusy}
+            >
+              <Upload className="size-3.5" />
+              Import backup
+            </Button>
+            {pendingRestart ? (
+              <Button size="sm" variant="ghost" onClick={() => void restartApp()}>
+                Restart now
+              </Button>
+            ) : null}
+          </div>
+          {backupNote ? (
+            <p className="break-all text-[10.5px] leading-4 text-fg-subtle">{backupNote}</p>
+          ) : null}
+        </div>
+      </Card>
       {/*=====> Data Section <=====*/}
       <Card>
         <CardHeader title="Local data" hint="SQLite · WAL" />

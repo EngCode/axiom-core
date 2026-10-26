@@ -121,6 +121,20 @@ does not need an installer.
   resets everything.
 - No sync, no export yet — planned.
 
+## Connect an AI client
+
+Axiom Core exposes a loopback HTTP API for external AI tools:
+
+1. Open **User → Local API**.
+2. Copy the token and note the port (`47615` by default).
+3. Connect any HTTP-capable client to `http://127.0.0.1:47615` with
+   `Authorization: Bearer <token>`.
+4. Read `/v1/snapshot` before writing; update tasks with `PATCH /v1/issues/{id}`.
+
+If the port is busy, change it in the same card and restart Axiom Core. The API only binds
+`127.0.0.1`; no data leaves the machine.
+
+Full route list, curl examples and an agent prompt: [Local API guide](docs/resources/LOCAL-API.md).
 ## Documentation
 
 The app ships its own offline documentation (`/docs`), and the source lives in `docs/`:

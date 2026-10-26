@@ -6,11 +6,12 @@
 //=====> Imports & Helpers <=====//
 
 import { useEffect, useMemo, useState } from 'react'
-import { FolderSearch, Library, RefreshCw, Search } from 'lucide-react'
+import { FolderSearch, ImagePlus, Library, RefreshCw, Search, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { LibraryTree } from '@/components/library-tree'
 import { Button, Card, CardHeader, EmptyState, Input, PageHeader } from '@/components/ui'
+import { coverSrc, pickMediaCover, removeMediaCover } from '@/lib/covers'
 import { attachMediaCopy, loadLibrary, saveMediaItem, upsertVolume } from '@/lib/library-api'
 import {
   pickMediaFolder,
@@ -43,6 +44,29 @@ function mediaId(root: string, relPath: string): string {
 
 //=====> Library Page <=====//
 
+function PosterArt({ path, title }: { path: string | null; title: string }) {
+  const [failed, setFailed] = useState(false)
+
+  if (!path || failed) {
+    return (
+      <div className="grid h-full w-full place-items-center bg-[radial-gradient(circle_at_30%_20%,#2a1d24,#0e1013_70%)]">
+        <span className="text-[34px] font-semibold tracking-[-0.06em] text-fg-subtle/30">
+          {title.slice(0, 1).toUpperCase()}
+        </span>
+      </div>
+    )
+  }
+
+  return (
+    <img
+      src={coverSrc(path)}
+      alt=""
+      loading="lazy"
+      onError={() => setFailed(true)}
+      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+    />
+  )
+}
 export default function LibraryPage() {
   //===> Library State <===//
   const [snapshot, setSnapshot] = useState<LibrarySnapshot | null>(null)
@@ -53,6 +77,7 @@ export default function LibraryPage() {
   const [scanType, setScanType] = useState<ScanMediaType>('all')
   const [importing, setImporting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [coverBusy, setCoverBusy] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null)
 
@@ -211,6 +236,32 @@ export default function LibraryPage() {
     })
   }
 
+  //===> Change A Poster <===//
+  async function assignCover(item: MediaItem) {
+    setCoverBusy(item.id)
+    try {
+      const path = await pickMediaCover()
+      if (!path) return
+      await saveMediaItem({ ...item, coverPath: path, updatedAt: new Date().toISOString() })
+      await refresh()
+    } catch (coverError) {
+      setError(coverError instanceof Error ? coverError.message : String(coverError))
+    } finally {
+      setCoverBusy(null)
+    }
+  }
+
+  async function clearCover(item: MediaItem) {
+    if (!item.coverPath) return
+    setCoverBusy(item.id)
+    try {
+      await removeMediaCover(item.coverPath).catch(() => {})
+      await saveMediaItem({ ...item, coverPath: null, updatedAt: new Date().toISOString() })
+      await refresh()
+    } finally {
+      setCoverBusy(null)
+    }
+  }
   //===> Render Page <===//
   return (
     <div className="animate-fade-in space-y-4">
@@ -387,7 +438,7 @@ export default function LibraryPage() {
                 No media matches this folder or search.
               </Card>
             ) : (
-              <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                 {visibleItems.map((item) => {
                   const kind = kindById.get(item.kindId)
                   const volumeId = selectedFolder?.split('|')[0]
@@ -398,26 +449,58 @@ export default function LibraryPage() {
                     ) ?? copies.find((entry) => entry.itemId === item.id)
 
                   return (
-                    <Card key={item.id} className="p-3.5">
-                      <div className="flex items-start gap-2">
-                        <span className="grid size-8 shrink-0 place-items-center rounded-control bg-surface-2 text-fg-subtle">
-                          <Library className="size-3.5" />
+                    <Card key={item.id} className="group overflow-hidden p-0">
+                      <div className="relative aspect-[2/3] overflow-hidden bg-surface-2">
+                        <PosterArt path={item.coverPath} title={item.title} />
+                        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-transparent" />
+
+                        <span className="absolute top-2 start-2 rounded-full border border-white/10 bg-black/55 px-2 py-0.5 text-[9px] font-medium tracking-[0.08em] text-white/75 uppercase backdrop-blur-sm">
+                          {kind?.name ?? item.kindId}
                         </span>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-[12.5px] font-medium text-fg">{item.title}</p>
-                          <p className="mt-0.5 text-[10px] text-fg-subtle">
+
+                        <div className="absolute top-2 end-2 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                          <button
+                            type="button"
+                            onClick={() => void assignCover(item)}
+                            disabled={coverBusy === item.id}
+                            aria-label={`Change poster for ${item.title}`}
+                            title="Change poster"
+                            className="grid size-7 place-items-center rounded-full border border-white/10 bg-black/55 text-white/80 backdrop-blur-sm transition-colors hover:bg-black/80 hover:text-white disabled:opacity-40"
+                          >
+                            <ImagePlus className="size-3.5" />
+                          </button>
+                          {item.coverPath ? (
+                            <button
+                              type="button"
+                              onClick={() => void clearCover(item)}
+                              disabled={coverBusy === item.id}
+                              aria-label={`Remove poster for ${item.title}`}
+                              title="Remove poster"
+                              className="grid size-7 place-items-center rounded-full border border-white/10 bg-black/55 text-white/60 backdrop-blur-sm transition-colors hover:bg-black/80 hover:text-white disabled:opacity-40"
+                            >
+                              <X className="size-3.5" />
+                            </button>
+                          ) : null}
+                        </div>
+
+                        <div className="absolute inset-x-0 bottom-0 p-3">
+                          <p className="truncate text-[13px] font-medium text-white" title={item.title}>
+                            {item.title}
+                          </p>
+                          <p className="mt-0.5 text-[9.5px] text-white/55">
                             {kind?.name ?? item.kindId} · {item.status}
                           </p>
                         </div>
                       </div>
-                      {copy ? (
+
+                      <div className="border-t border-line/70 px-3 py-2">
                         <p
-                          className="mt-2 truncate font-mono text-[9.5px] text-fg-subtle"
-                          title={copy.relPath}
+                          className="truncate font-mono text-[9px] text-fg-subtle"
+                          title={copy?.relPath}
                         >
-                          {copy.relPath}
+                          {copy?.relPath ?? 'No copy attached'}
                         </p>
-                      ) : null}
+                      </div>
                     </Card>
                   )
                 })}

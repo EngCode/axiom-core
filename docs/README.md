@@ -19,6 +19,8 @@ page and feature has its own document; the product-level specs live in
 | [Library spec](resources/LIBRARY.md) | Media module: kinds, copies, volumes, scanning |
 | [Design system](resources/DESIGN.md) | Tokens, themes, components, change recipes |
 | [Core API](resources/CORE-API.md) | Versioned read and issue mutation API |
+| [Local API](resources/LOCAL-API.md) | Connect an external AI client over localhost |
+| [Backup](features/backup.md) | Export/import the workspace, covers and attachments |
 
 ## Pages
 
@@ -33,8 +35,9 @@ page and feature has its own document; the product-level specs live in
 | `/notes?note=<id>` | Note deep link | [notes.md](pages/notes.md) | opens a specific note |
 | `/documents` | Documents | [documents.md](pages/documents.md) | planned long-form pages; status surface only |
 | `/library` | Library | [library.md](pages/library.md) | media kinds overview; browsing planned |
-| `/tools` | Tools catalog | [tools.md](pages/tools.md) | searchable categories, recent tools |`n| `/tools/:id` | Tool workspace | [tools.md](pages/tools.md) | local image resize, convert, tint, palette |
-| `/user` | User | [settings.md](pages/settings.md) | profile, appearance, backgrounds, help, local data |
+| `/tools` | Tools catalog | [tools.md](pages/tools.md) | searchable categories, recent tools |
+| `/tools/:id` | Tool workspace | [tools.md](pages/tools.md) | local image resize, convert, tint, palette |
+| `/user` | User | [settings.md](pages/settings.md) | profile, appearance, Local API, backup, help, local data |
 | *(desktop window)* | Quick capture | [quick-capture.md](features/quick-capture.md) | global hotkey, one-line capture |
 
 Unknown routes redirect to the dashboard.
@@ -49,12 +52,15 @@ Unknown routes redirect to the dashboard.
 | Themes and design tokens | shipped | [themes.md](features/themes.md) | `src/index.css`, `src/lib/themes.ts` |
 | Persistence (SQLite + cache) | shipped | [persistence.md](features/persistence.md) | `src-tauri/src/data/`, `src/lib/db.ts` |
 | Keyboard model | shipped | [keyboard.md](features/keyboard.md) | `src/lib/ui.tsx`, components |
-| Media library | scan/import MVP | [media-library.md](features/media-library.md) | `src-tauri/src/library_scan.rs`, `src/pages/library.tsx` |`n| Documents | shipped | [documents.md](pages/documents.md) | `src/pages/documents.tsx`, `src/components/document-list.tsx` |
+| Media library | scan/import MVP | [media-library.md](features/media-library.md) | `src-tauri/src/library_scan.rs`, `src/pages/library.tsx` |
+| Documents | shipped | [documents.md](pages/documents.md) | `src/pages/documents.tsx`, `src/components/document-list.tsx` |
 | In-app documentation | shipped | [in-app-docs.md](features/in-app-docs.md) | `src/pages/docs.tsx`, `src/lib/docs.ts` |
 | Personalization | shipped | [personalization.md](features/personalization.md) | `src/lib/identity.ts`, `src/pages/settings.tsx` |
 | Project workspace | shipped | [project-detail.md](pages/project-detail.md) | `src/pages/project-detail.tsx`, `src/lib/actions.ts` |
 | Installer | test build | [installer.md](features/installer.md) | `src-tauri/tauri.conf.json`, `src-tauri/resources/seed/` |
 | Core API v1 | shipped | [CORE-API.md](resources/CORE-API.md) | `src-tauri/src/data/api.rs`, `src/lib/core-api.ts` |
+| Local API | shipped | [LOCAL-API.md](resources/LOCAL-API.md) | `src-tauri/src/http_api.rs`, `src/lib/local-api.ts` |
+| Backup & restore | shipped | [backup.md](features/backup.md) | `src-tauri/src/backup.rs`, `src/lib/backup.ts` |
 | Settings & appearance | shipped | [settings.md](pages/settings.md) | `src/pages/settings.tsx`, `src/lib/appearance.ts` |
 
 Status vocabulary used throughout the docs:

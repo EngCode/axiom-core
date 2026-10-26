@@ -20,6 +20,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 pub mod data;
 mod attachments;
+mod backup;
+mod http_api;
 pub mod library_scan;
 
 use data::api::{IssueDraft, IssuePatch};
@@ -31,7 +33,7 @@ use std::sync::Mutex;
 use tauri::State;
 use serde::Serialize;
 
-struct Db(Mutex<rusqlite::Connection>);
+pub struct Db(pub Mutex<rusqlite::Connection>);
 
 const CORE_API_VERSION: u32 = 1;
 
@@ -331,6 +333,43 @@ fn open_issue_attachment(app: tauri::AppHandle, path: String) -> Result<(), Stri
 fn delete_issue_attachment(app: tauri::AppHandle, path: String) -> Result<(), String> {
     attachments::remove(&app, &path)
 }
+#[tauri::command]
+fn pick_media_cover(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    attachments::pick_cover(&app)
+}
+
+#[tauri::command]
+fn remove_media_cover(app: tauri::AppHandle, path: String) -> Result<(), String> {
+    attachments::remove_cover(&app, &path)
+}
+#[tauri::command]
+fn local_api_status(pool: State<'_, Db>) -> Result<http_api::ApiStatus, String> {
+    let connection = pool.0.lock().map_err(|error| error.to_string())?;
+    Ok(http_api::status(&connection))
+}
+
+#[tauri::command]
+fn save_local_api_config(
+    pool: State<'_, Db>,
+    config: http_api::ApiConfig,
+) -> Result<http_api::ApiStatus, String> {
+    let connection = pool.0.lock().map_err(|error| error.to_string())?;
+    http_api::save_config(&connection, &config)
+}
+#[tauri::command]
+fn export_workspace_backup(app: tauri::AppHandle, pool: State<'_, Db>) -> Result<Option<String>, String> {
+    backup::export(&app, &pool)
+}
+
+#[tauri::command]
+fn import_workspace_backup(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    backup::stage_import(&app)
+}
+
+#[tauri::command]
+fn restart_app(app: tauri::AppHandle) {
+    app.restart();
+}
 //=====> Application Setup <=====//
 
 pub fn run() {
@@ -355,6 +394,13 @@ pub fn run() {
             pick_media_folder,
             scan_media_folder,
             pick_issue_attachment,
+            pick_media_cover,
+            remove_media_cover,
+            local_api_status,
+            save_local_api_config,
+            export_workspace_backup,
+            import_workspace_backup,
+            restart_app,
             open_issue_attachment,
             delete_issue_attachment
         ])
@@ -413,6 +459,9 @@ pub fn run() {
                 None => app.path().app_data_dir()?,
             };
             let database_path = data_dir.join("axiom.db");
+            if let Err(error) = backup::apply_pending_import(&data_dir) {
+                eprintln!("could not apply the staged backup: {error}");
+            }
             let legacy_database = data_dir.join("orbit.db");
 
             //===> First Run: Adopt The Bundled Workspace Seed <===//
@@ -431,7 +480,9 @@ pub fn run() {
                 let _ = std::fs::rename(data_dir.join("orbit.db-shm"), data_dir.join("axiom.db-shm"));
             }
             let connection = db::open(&database_path)?;
+            let api_config = http_api::ensure_config(&connection);
             app.manage(Db(Mutex::new(connection)));
+            http_api::start(app.handle().clone(), api_config);
 
             // The first launch opens the app; AXIOM_START_HIDDEN=1 keeps the shell tray-only.
             if env_value("AXIOM_START_HIDDEN", "ORBIT_START_HIDDEN").unwrap_or_default() != "1" {

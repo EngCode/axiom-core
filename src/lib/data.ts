@@ -813,6 +813,62 @@ const seedIssues: SeedIssue[] = [
     createdDaysAgo: 0,
     completedDaysAgo: 0,
   },
+  {
+    id: 'i-api-56',
+    key: 'AXI-56',
+    title: 'Library poster grid and cover art',
+    description:
+      'Library uses poster-shaped cards with cover selection, asset-protocol display and a typographic fallback.',
+    status: 'done',
+    priority: 'high',
+    projectId: 'p-axiom',
+    labels: ['feature', 'media', 'visual'],
+    dueDate: null,
+    createdDaysAgo: 0,
+    completedDaysAgo: 0,
+  },
+  {
+    id: 'i-api-57',
+    key: 'AXI-57',
+    title: 'Local HTTP API for AI clients',
+    description:
+      'Loopback HTTP API with bearer token, configurable port, User settings, AI guide and live state events.',
+    status: 'done',
+    priority: 'high',
+    projectId: 'p-axiom',
+    labels: ['feature', 'api', 'ai'],
+    dueDate: null,
+    createdDaysAgo: 0,
+    completedDaysAgo: 0,
+  },
+  {
+    id: 'i-api-58',
+    key: 'AXI-58',
+    title: 'Workspace export, import and restore',
+    description:
+      'Folder backup of SQLite, covers and attachments; validated staged import with pre-import safety copy.',
+    status: 'done',
+    priority: 'high',
+    projectId: 'p-axiom',
+    labels: ['feature', 'data', 'backup'],
+    dueDate: null,
+    createdDaysAgo: 0,
+    completedDaysAgo: 0,
+  },
+  {
+    id: 'i-api-59',
+    key: 'AXI-59',
+    title: 'Data-preserving installer update',
+    description:
+      'Installer update installed over the existing workspace without replacing user data.',
+    status: 'done',
+    priority: 'medium',
+    projectId: 'p-axiom',
+    labels: ['release', 'desktop'],
+    dueDate: null,
+    createdDaysAgo: 0,
+    completedDaysAgo: 0,
+  },
 ]
 
 const issues: Issue[] = seedIssues.map(({ createdDaysAgo, completedDaysAgo, ...issue }) => {
@@ -1173,6 +1229,6 @@ export function createSeedState(): AppState {
       { id: 'a-5', kind: 'issue', message: 'Completed WEB-5 · Ship dark mode toggle', at: daysAgo(2, 16) },
       { id: 'a-6', kind: 'project', message: 'Created project · Reading list', at: daysAgo(21, 10) },
     ],
-    counters: { issue: 55 },
+    counters: { issue: 59 },
   }
 }

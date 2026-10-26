@@ -22,6 +22,7 @@ import { normalizeAppearance, normalizeBackground, previewBackgroundFromUrl } fr
 import { normalizeIdentity } from './identity'
 import { normalizeTheme, previewThemeFromUrl, themeMeta } from './themes'
 import { invoke } from '@tauri-apps/api/core'
+import { listen } from '@tauri-apps/api/event'
 import { setWindowTitle } from './window'
 import { isTauri } from './tauri'
 import type {
@@ -559,6 +560,35 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  // The local HTTP API writes through the same database. When an external AI mutates a task,
+  // adopt the persisted snapshot so the open window and the database do not diverge.
+  useEffect(() => {
+    if (!isTauri()) return
+    let stopped = false
+    let unlisten: (() => void) | undefined
+
+    void listen('axiom://state-changed', () => {
+      void loadStateFromDisk().then((persisted) => {
+        if (stopped || !persisted || persisted.version !== APP_VERSION) return
+        dispatch({
+          type: 'state/replace',
+          state: {
+            ...persisted,
+            theme: normalizeTheme(persisted.theme),
+            identity: normalizeIdentity(persisted.identity),
+            appearance: normalizeAppearance(persisted.appearance),
+          },
+        })
+      })
+    }).then((dispose) => {
+      unlisten = dispose
+    })
+
+    return () => {
+      stopped = true
+      unlisten?.()
+    }
+  }, [])
   // Other windows (e.g. quick capture) share this origin's localStorage. When one
   // of them writes, adopt its state so the main window stays live.
   useEffect(() => {
