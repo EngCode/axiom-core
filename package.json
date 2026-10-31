@@ -9,6 +9,9 @@
   "scripts": {
     "dev": "vite",
     "build": "node node_modules/typescript/bin/tsc --noEmit && node node_modules/vite/bin/vite.js build",
+    "build:win": "tauri build --bundles nsis",
+    "build:linux": "tauri build --bundles deb,appimage",
+    "build:mac": "tauri build --bundles dmg,app",
     "preview": "vite preview",
     "typecheck": "node node_modules/typescript/bin/tsc --noEmit",
     "tauri": "tauri"

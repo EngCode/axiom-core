@@ -19,8 +19,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tauri::{AppHandle, Emitter, Manager};
 
+use crate::data::models::LibraryQuery;
 use crate::data::{api, db};
 use crate::Db;
+use crate::library_db;
 
 pub const DEFAULT_PORT: u16 = 47615;
 
@@ -382,6 +384,74 @@ fn route(app: &AppHandle, request: &Request) -> Result<(u16, Value), (u16, Strin
             Ok((201, json!(issue)))
         }
 
+        //===> Library (read-only) <===//
+        ("GET", ["v1", "library", "overview"]) => {
+            let overview =
+                library_db::overview(&connection).map_err(|error| (500, error.to_string()))?;
+            Ok((
+                200,
+                serde_json::to_value(overview).map_err(|error| (500, error.to_string()))?,
+            ))
+        }
+        ("GET", ["v1", "library", "categories"]) => {
+            let categories =
+                library_db::categories(&connection).map_err(|error| (500, error.to_string()))?;
+            Ok((
+                200,
+                serde_json::to_value(categories).map_err(|error| (500, error.to_string()))?,
+            ))
+        }
+        ("GET", ["v1", "library", "roots"]) => {
+            let roots = library_db::roots(&connection).map_err(|error| (500, error.to_string()))?;
+            Ok((
+                200,
+                serde_json::to_value(roots).map_err(|error| (500, error.to_string()))?,
+            ))
+        }
+        ("GET", ["v1", "library", "runs"]) => {
+            let runs =
+                library_db::recent_runs(&connection).map_err(|error| (500, error.to_string()))?;
+            Ok((
+                200,
+                serde_json::to_value(runs).map_err(|error| (500, error.to_string()))?,
+            ))
+        }
+        ("GET", ["v1", "library", "items"]) => {
+            let page_size = request
+                .query
+                .get("pageSize")
+                .or_else(|| request.query.get("page_size"))
+                .and_then(|value| value.parse::<i64>().ok());
+            let query = LibraryQuery {
+                kind: request.query.get("kind").cloned(),
+                category: request.query.get("category").cloned(),
+                volume: request.query.get("volume").cloned(),
+                status: request.query.get("status").cloned(),
+                search: request.query.get("search").cloned(),
+                sort: request.query.get("sort").cloned(),
+                page: request
+                    .query
+                    .get("page")
+                    .and_then(|value| value.parse::<i64>().ok()),
+                page_size,
+            };
+            let page =
+                library_db::query(&connection, &query).map_err(|error| (500, error.to_string()))?;
+            Ok((
+                200,
+                serde_json::to_value(page).map_err(|error| (500, error.to_string()))?,
+            ))
+        }
+        ("GET", ["v1", "library", "items", id]) => {
+            let detail = library_db::item_detail(&connection, id)
+                .map_err(|error| (500, error.to_string()))?
+                .ok_or((404, "library item not found".to_string()))?;
+            Ok((
+                200,
+                serde_json::to_value(detail).map_err(|error| (500, error.to_string()))?,
+            ))
+        }
+
         //===> Machine Description <===//
         ("GET", ["v1", "openapi.json"]) => Ok((200, openapi())),
         ("GET", ["v1"]) | ("GET", []) => Ok((200, openapi())),
@@ -406,7 +476,15 @@ fn openapi() -> Value {
             "/v1/issues/{id}": {
                 "get": { "summary": "Read an issue by id or key" },
                 "patch": { "summary": "Update an issue" }
-            }
+            },
+            "/v1/library/overview": { "get": { "summary": "Library counts, categories, volumes and roots" } },
+            "/v1/library/categories": { "get": { "summary": "List media categories" } },
+            "/v1/library/roots": { "get": { "summary": "List scan roots" } },
+            "/v1/library/runs": { "get": { "summary": "Recent scan runs" } },
+            "/v1/library/items": {
+                "get": { "summary": "Paginated titles, filter with ?kind=&category=&status=&search=&sort=&page=&pageSize=" }
+            },
+            "/v1/library/items/{id}": { "get": { "summary": "One title with its seasons and files" } }
         }
     })
 }

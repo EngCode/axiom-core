@@ -100,12 +100,19 @@ fn validated_path(app: &AppHandle, path: &str) -> Result<PathBuf, String> {
 
 pub fn open(app: &AppHandle, path: &str) -> Result<(), String> {
     let target = validated_path(app, path)?;
-    Command::new("cmd")
+    //===> Hand Off To The OS <===//
+    // Windows uses the shell, macOS `open`, and Linux `xdg-open`. Keeping this
+    // cfg-gated means the same build code works on every release target.
+    #[cfg(target_os = "windows")]
+    let status = Command::new("cmd")
         .args(["/C", "start", ""])
-        .arg(target)
-        .spawn()
-        .map(|_| ())
-        .map_err(|error| error.to_string())
+        .arg(&target)
+        .spawn();
+    #[cfg(target_os = "macos")]
+    let status = Command::new("open").arg(&target).spawn();
+    #[cfg(all(unix, not(target_os = "macos")))]
+    let status = Command::new("xdg-open").arg(&target).spawn();
+    status.map(|_| ()).map_err(|error| error.to_string())
 }
 
 pub fn remove(app: &AppHandle, path: &str) -> Result<(), String> {

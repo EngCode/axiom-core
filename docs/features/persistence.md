@@ -19,10 +19,11 @@ profile). Both exist for sandboxed/dev launches; normal installs never set them.
 
 ## Database
 
-- SQLite in **WAL** mode, foreign keys on, `PRAGMA user_version = 1`.
+- SQLite in **WAL** mode, foreign keys on, `temp_store = MEMORY`, `PRAGMA user_version = 2`.
 - Workspace tables: `projects`, `issues`, `notes`, `activity`, `counters`, `meta`.
-- Library tables: `media_kinds`, `media_items`, `volumes`, `media_copies`, `media_progress`,
-  `tags`, `media_tags` (see [media-library.md](media-library.md)).
+- Library tables: `media_kinds`, `media_categories`, `media_items`, `volumes`, `scan_roots`,
+  `scan_runs`, `media_copies`, `media_progress`, `tags`, `media_tags` (see
+  [media-library.md](media-library.md)).
 
 ## Write path
 
@@ -80,8 +81,8 @@ This release was previously called **Orbit**. Migration is automatic:
 - legacy theme ids `orbit`, `dark`, `axiom` and `graphite` map to `classic`.
 ## Verification performed
 
-- Schema and data inspected directly: 4 projects, 17 issues, 5 notes, 6 activity rows, 6 media
-  kinds, `user_version = 1`, WAL journal.
+- Schema and data inspected directly: 5 media kinds, 3 categories (English/Arabic/Anime),
+  `user_version = 2`, WAL journal.
 - Hydration tested by setting `theme = light` in the database, restarting: the app started in light
   mode, proving SQLite (not the seed) was read. The theme was restored afterwards.
 

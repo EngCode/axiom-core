@@ -22,12 +22,14 @@ pub mod data;
 mod attachments;
 mod backup;
 mod http_api;
+mod library_db;
 pub mod library_scan;
 
 use data::api::{IssueDraft, IssuePatch};
 use data::db;
 use data::models::{
-    AppState as PersistedState, Issue, LibrarySnapshot, MediaCopy, MediaItem, Note, Project, Volume,
+    AppState as PersistedState, Issue, LibraryItemDetail, LibraryOverview, LibraryPage, LibraryQuery,
+    LibrarySnapshot, MediaCategory, MediaCopy, MediaItem, Note, Project, ScanRoot, Volume,
 };
 use std::sync::Mutex;
 use tauri::State;
@@ -56,6 +58,18 @@ fn env_value(primary: &str, legacy: &str) -> Option<String> {
         .ok()
         .filter(|value| !value.is_empty())
         .or_else(|| std::env::var(legacy).ok().filter(|value| !value.is_empty()))
+}
+
+/// Where the database and its backups live. Honours the dev override so a
+/// rebuild can be rehearsed against a copy without touching the live library.
+fn data_dir(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
+    match env_value("AXIOM_DATA_DIR", "ORBIT_DATA_DIR") {
+        Some(dir) => Ok(std::path::PathBuf::from(dir)),
+        None => app
+            .path()
+            .app_data_dir()
+            .map_err(|error| error.to_string()),
+    }
 }
 fn app_icon() -> Image<'static> {
     Image::from_bytes(include_bytes!("../icons/32x32.png")).expect("valid tray icon")
@@ -309,13 +323,124 @@ fn pick_media_folder() -> Option<String> {
     library_scan::pick_folder()
 }
 
+//=====> Library V2 Commands <=====//
+
+fn lock_db<'a>(pool: &'a State<'_, Db>) -> Result<std::sync::MutexGuard<'a, rusqlite::Connection>, String> {
+    pool.0.lock().map_err(|_| "database lock poisoned".to_string())
+}
+
 #[tauri::command]
-fn scan_media_folder(
+fn library_categories(pool: State<'_, Db>) -> Result<Vec<MediaCategory>, String> {
+    let connection = lock_db(&pool)?;
+    library_db::categories(&connection).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn library_roots(pool: State<'_, Db>) -> Result<Vec<ScanRoot>, String> {
+    let connection = lock_db(&pool)?;
+    library_db::roots(&connection).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn save_scan_root(
+    pool: State<'_, Db>,
     path: String,
-    depth: u32,
-    media_type: String,
-) -> Result<Vec<library_scan::ScanCandidate>, String> {
-    library_scan::scan(&path, depth, &media_type)
+    kind: String,
+    category_id: Option<String>,
+    depth: i64,
+) -> Result<ScanRoot, String> {
+    let connection = lock_db(&pool)?;
+    library_db::save_root(&connection, &path, &kind, category_id.as_deref(), depth)
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn delete_scan_root(pool: State<'_, Db>, id: String) -> Result<(), String> {
+    let connection = lock_db(&pool)?;
+    library_db::delete_root(&connection, &id).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn library_overview(pool: State<'_, Db>) -> Result<LibraryOverview, String> {
+    let connection = lock_db(&pool)?;
+    library_db::overview(&connection).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn library_query(pool: State<'_, Db>, request: LibraryQuery) -> Result<LibraryPage, String> {
+    let connection = lock_db(&pool)?;
+    library_db::query(&connection, &request).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn library_item(pool: State<'_, Db>, id: String) -> Result<Option<LibraryItemDetail>, String> {
+    let connection = lock_db(&pool)?;
+    library_db::item_detail(&connection, &id).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn library_set_cover(pool: State<'_, Db>, id: String, path: Option<String>) -> Result<(), String> {
+    let connection = lock_db(&pool)?;
+    library_db::set_cover(&connection, &id, path.as_deref()).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn library_recent_runs(pool: State<'_, Db>) -> Result<Vec<library_db::ScanRunSummary>, String> {
+    let connection = lock_db(&pool)?;
+    library_db::recent_runs(&connection).map_err(|error| error.to_string())
+}
+
+/// Dry run: scans every root and reports what a rebuild would produce. It takes
+/// no write lock and changes nothing.
+#[tauri::command]
+async fn library_rebuild_preview(
+    app: tauri::AppHandle,
+) -> Result<library_db::RebuildPreview, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let pool = app.state::<Db>();
+        let (roots, keys) = {
+            let connection = lock_db(&pool)?;
+            (
+                library_db::roots(&connection).map_err(|error| error.to_string())?,
+                library_db::category_keys(&connection).map_err(|error| error.to_string())?,
+            )
+        };
+        Ok(library_db::preview(&library_db::plan(&roots, &keys)))
+    })
+    .await
+    .map_err(|error| error.to_string())?
+}
+
+/// Real rebuild: scan, back up the database, wipe the library tables, reimport.
+/// Scanning happens off the UI thread and without holding the database lock.
+#[tauri::command]
+async fn library_rebuild(app: tauri::AppHandle) -> Result<library_db::ImportSummary, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let pool = app.state::<Db>();
+        let (roots, keys) = {
+            let connection = lock_db(&pool)?;
+            (
+                library_db::roots(&connection).map_err(|error| error.to_string())?,
+                library_db::category_keys(&connection).map_err(|error| error.to_string())?,
+            )
+        };
+
+        let plan = library_db::plan(&roots, &keys);
+        if plan.roots.is_empty() {
+            return Err("No scan roots are registered yet.".to_string());
+        }
+
+        let mut connection = lock_db(&pool)?;
+        let directory = data_dir(&app)?;
+        std::fs::create_dir_all(&directory).map_err(|error| error.to_string())?;
+        let backup = library_db::backup_database(&connection, &directory)?;
+        let mut summary =
+            library_db::apply_plan(&mut connection, &plan).map_err(|error| error.to_string())?;
+        summary.backup_path = Some(backup);
+        Ok(summary)
+    })
+    .await
+    .map_err(|error| error.to_string())?
 }
 #[tauri::command]
 fn pick_issue_attachment(
@@ -392,7 +517,17 @@ pub fn run() {
             core_issue_update,
             core_issue_create,
             pick_media_folder,
-            scan_media_folder,
+            library_categories,
+            library_roots,
+            save_scan_root,
+            delete_scan_root,
+            library_overview,
+            library_query,
+            library_item,
+            library_set_cover,
+            library_recent_runs,
+            library_rebuild_preview,
+            library_rebuild,
             pick_issue_attachment,
             pick_media_cover,
             remove_media_cover,

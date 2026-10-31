@@ -28,8 +28,8 @@ on Windows 10/11.
 │ tray icon · global hotkey · windows · single instance            │
 │                                                                  │
 │  ┌───────────── Rust shell (src-tauri/src/lib.rs) ────────────┐  │
-│  │ commands: load_state · save_state · load_library ·         │  │
-│  │           save_media_item · attach_media_copy · upsert_volume │
+│  │ commands: load_state · save_state · library_query ·         │  │
+│  │           library_rebuild · library_overview · library_item │  │
 │  │                                                            │  │
 │  │  data/db.rs  ──  SQLite  %APPDATA%\com.axiom.core\axiom.db │
 │  └────────────────────────────┬───────────────────────────────┘  │
@@ -82,21 +82,24 @@ Memory measured on this machine, production build:
 
 ## Database
 
-SQLite, WAL mode, `PRAGMA user_version = 1`, foreign keys on.
+SQLite, WAL mode, `PRAGMA user_version = 2`, foreign keys on, `temp_store = MEMORY`.
 
 | Group | Tables |
 | --- | --- |
 | Workspace | `projects`, `issues`, `notes`, `activity`, `counters`, `meta` |
-| Library | `media_kinds`, `media_items`, `volumes`, `media_copies`, `media_progress`, `tags`, `media_tags` |
+| Library | `media_kinds`, `media_categories`, `media_items`, `volumes`, `scan_roots`, `scan_runs`, `media_copies`, `media_progress`, `tags`, `media_tags` |
 
 Writes:
 - The workspace is saved as a **whole snapshot**: delete + insert in one transaction. Exact
   mirror, simple to reason about, fine at personal scale.
-- The library is written through **per-entity commands** because the scanner will produce
-  thousands of copies.
+- The library is written by the **rebuild** flow: dry run, `VACUUM INTO` backup, replace
+  `media_items`/`media_copies`, then restore per-item user fields by stable id. The grid reads
+  paginated aggregate rows and never loads copies.
+- Library data is kept out of the workspace snapshot and `localStorage`, so indexed files cannot
+  slow notes or startup.
 
 Schema changes happen in `src-tauri/src/data/db.rs`: add a migration step and bump
-`PRAGMA user_version`. Current version is 1.
+`PRAGMA user_version`. Current version is 2.
 
 ## Build and run modes
 
@@ -126,6 +129,7 @@ Environment overrides (development / sandboxing only):
 
 - Window-open memory is dominated by WebView2; tray-only is ~31 MB.
 - Whole-snapshot saves rewrite workspace tables on every change (debounced).
-- No installer yet; the release binary runs from `target/release`.
+- Releases are built by CI for Windows, Linux and macOS and published to GitHub Releases; the
+  release binary runs from `src-tauri/target/release/`.
 - No sync, auth or export; all state is local.
 - Single-window architecture: a second window always shares the same state and database.

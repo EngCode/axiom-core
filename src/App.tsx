@@ -9,6 +9,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 
 import { AppShell } from '@/components/app-shell'
 import { CommandPalette } from '@/components/command-palette'
+import { ErrorBoundary } from '@/components/error-boundary'
 import { IssueDialog } from '@/components/issue-dialog'
 import { AppProvider } from '@/lib/store'
 import { UIProvider } from '@/lib/ui'
@@ -16,7 +17,7 @@ import DashboardPage from '@/pages/dashboard'
 import DocumentsPage from '@/pages/documents'
 const DocsPage = lazy(() => import('@/pages/docs'))
 import IssuesPage from '@/pages/issues'
-import LibraryPage from '@/pages/library'
+const LibraryPage = lazy(() => import('@/pages/library'))
 import NotesPage from '@/pages/notes'
 import ProjectDetailPage from '@/pages/project-detail'
 import UserPage from '@/pages/user'
@@ -49,7 +50,16 @@ export default function App() {
               <Route path="notes" element={<NotesPage />} />
               <Route path="docs" element={<Suspense fallback={<RouteLoading />}><DocsPage /></Suspense>} />
               <Route path="documents" element={<DocumentsPage />} />
-              <Route path="library" element={<LibraryPage />} />
+              <Route
+                path="library"
+                element={
+                  <ErrorBoundary title="The Library could not be loaded">
+                    <Suspense fallback={<RouteLoading />}>
+                      <LibraryPage />
+                    </Suspense>
+                  </ErrorBoundary>
+                }
+              />
               <Route path="tools" element={<ToolsPage />} />
               <Route path="tools/:toolId" element={<ToolWorkspacePage />} />
               <Route path="user" element={<UserPage />} />

@@ -174,6 +174,36 @@ pub struct MediaKind {
     pub fields: serde_json::Value,
 }
 
+/// A user-managed Library category such as English, Arabic or Anime. Categories
+/// are data, not enums: adding one is a row insert, never a schema migration.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MediaCategory {
+    pub id: String,
+    pub key: String,
+    pub name: String,
+    pub sort_order: i64,
+    pub hidden: bool,
+    /// Kind keys this category can appear under, e.g. `["movies", "series"]`.
+    pub applies_to: Vec<String>,
+}
+
+/// A folder the scanner owns. The root decides how ambiguous files are grouped
+/// and supplies a default category that per-folder detection can override.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScanRoot {
+    pub id: String,
+    pub path: String,
+    pub volume_id: Option<String>,
+    /// `movies` | `series` | `games` | `books` | `music` | `auto`
+    pub kind: String,
+    pub category_id: Option<String>,
+    pub depth: i64,
+    pub last_scan_at: Option<String>,
+    pub created_at: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MediaItem {
@@ -191,6 +221,23 @@ pub struct MediaItem {
     pub provider_ids: serde_json::Value,
     pub created_at: String,
     pub updated_at: String,
+    //===> Library V2 Aggregates <===//
+    #[serde(default)]
+    pub category_id: Option<String>,
+    #[serde(default)]
+    pub external_key: Option<String>,
+    #[serde(default)]
+    pub folder_path: Option<String>,
+    #[serde(default)]
+    pub primary_path: Option<String>,
+    #[serde(default)]
+    pub copy_count: i64,
+    #[serde(default)]
+    pub episode_count: i64,
+    #[serde(default)]
+    pub season_count: i64,
+    #[serde(default)]
+    pub total_size_bytes: i64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -241,6 +288,146 @@ pub struct LibrarySnapshot {
     pub copies: Vec<MediaCopy>,
     pub volumes: Vec<Volume>,
     pub progress: Vec<MediaProgress>,
+}
+
+//===> Library V2 Query Models <===//
+
+/// One page of the Library grid. Only the aggregate columns are loaded, never
+/// the per-file copies, so the payload stays small no matter how many files
+/// are indexed.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LibraryCard {
+    pub id: String,
+    pub kind_id: String,
+    pub kind_key: String,
+    pub category_id: Option<String>,
+    pub category_key: Option<String>,
+    pub category_name: Option<String>,
+    pub title: String,
+    pub year: Option<i64>,
+    pub status: String,
+    pub cover_path: Option<String>,
+    pub folder_path: Option<String>,
+    pub primary_path: Option<String>,
+    pub copy_count: i64,
+    pub episode_count: i64,
+    pub season_count: i64,
+    pub total_size_bytes: i64,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct LibraryQuery {
+    #[serde(default)]
+    pub kind: Option<String>,
+    #[serde(default)]
+    pub category: Option<String>,
+    #[serde(default)]
+    pub volume: Option<String>,
+    #[serde(default)]
+    pub status: Option<String>,
+    #[serde(default)]
+    pub search: Option<String>,
+    /// `title` | `recent` | `size` | `episodes`
+    #[serde(default)]
+    pub sort: Option<String>,
+    #[serde(default)]
+    pub page: Option<i64>,
+    #[serde(default)]
+    pub page_size: Option<i64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LibraryPage {
+    pub items: Vec<LibraryCard>,
+    pub total: i64,
+    pub page: i64,
+    pub page_size: i64,
+    pub page_count: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LibraryCount {
+    pub key: String,
+    pub name: String,
+    pub count: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LibraryCategoryCount {
+    pub id: String,
+    pub key: String,
+    pub name: String,
+    pub sort_order: i64,
+    pub hidden: bool,
+    pub applies_to: Vec<String>,
+    pub count: i64,
+    /// Count per kind key, e.g. `{"movies": 12, "series": 4}`.
+    pub by_kind: HashMap<String, i64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LibraryVolumeCount {
+    pub id: String,
+    pub label: String,
+    pub mount_path: Option<String>,
+    pub item_count: i64,
+    pub copy_count: i64,
+    pub total_size_bytes: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LibraryOverview {
+    pub total_items: i64,
+    pub total_copies: i64,
+    pub total_size_bytes: i64,
+    pub kinds: Vec<LibraryCount>,
+    pub categories: Vec<LibraryCategoryCount>,
+    pub volumes: Vec<LibraryVolumeCount>,
+    pub roots: Vec<ScanRoot>,
+}
+
+/// A copy rendered in the item detail drawer. Keeps the volume label beside the
+/// relative path so the path is understandable without a second lookup.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LibraryCopyView {
+    pub id: String,
+    pub volume_id: String,
+    pub volume_label: String,
+    pub rel_path: String,
+    pub size_bytes: Option<i64>,
+    pub quality: Option<String>,
+    pub season: Option<String>,
+    pub episode: Option<i64>,
+    pub missing_at: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LibrarySeasonView {
+    pub label: String,
+    pub number: i64,
+    pub episode_count: i64,
+    pub total_size_bytes: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LibraryItemDetail {
+    pub item: LibraryCard,
+    pub notes: String,
+    pub rating: Option<f64>,
+    pub original_title: Option<String>,
+    pub seasons: Vec<LibrarySeasonView>,
+    pub copies: Vec<LibraryCopyView>,
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

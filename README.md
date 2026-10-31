@@ -9,8 +9,8 @@ browser tab. Your work lives in SQLite on your machine.
 ![Axiom Core dashboard](docs/assets/screens/preview-dashboard.png)
 
 > **Status:** personal beta. Projects, tasks, documents, notes, milestones, themes, settings and a
-> first Library scan/import flow are working. Rich task content and the utility tools are the next
-> build.
+> paginated media library (one entry per series, English/Arabic/Anime categories) are working.
+> Metadata providers and the remaining utility tools are next.
 
 ## Why it exists
 
@@ -34,8 +34,9 @@ deeply:
 | **Milestones** | Due dates, status, linked tasks and completion rollup inside a project |
 | **Documents** | Folder tree, child pages, rich-text editor, project/task links, search, deep links |
 | **Notes** | Folder tree, rich-text notes, tags, pinning, project and task links |
-| **Library** | Volume/folder tree, scoped search, configurable scanning, review, import, item grid |
-| **User / themes** | Profile, Classic/Paper/Terminal, local or per-page backgrounds, help, data reset |\n| **Tools** | Local image resize, convert, tint and palette extraction |
+| **Library** | One entry per series, Movies/Series → English/Arabic/Anime categories, poster grid, search and filters, rebuild with backup |
+| **User / themes** | Profile, Classic/Paper/Terminal, local or per-page backgrounds, help, data reset |
+| **Tools** | Local image resize, convert, tint and palette extraction |
 | **Command palette** | `⌘K` / `Ctrl+K` to navigate, search or create |
 
 ## Desktop experience
@@ -80,32 +81,29 @@ pnpm build
 cargo build --release --features custom-protocol --manifest-path src-tauri/Cargo.toml
 ```
 
-## Install (Windows)
+## Install
 
-A per-user NSIS installer is available for testing:
+Installers are published on **[GitHub Releases](https://github.com/EngCode/axiom-core/releases)** —
+they are not committed to the repository.
 
-```
-release/Axiom Core_0.1.0_x64-setup.exe
-```
+| Platform | Download |
+| --- | --- |
+| Windows x64 | NSIS `.exe` — per-user, no admin prompt |
+| Linux x64 | `.deb` or AppImage |
+| macOS (Apple Silicon / Intel) | `.dmg` |
 
-- **Unsigned test build** — SmartScreen may ask for *More info → Run anyway*.
-- Installs per-user, no admin prompt.
+- **Unsigned builds** — Windows SmartScreen may ask for *More info → Run anyway*; macOS Gatekeeper
+  may require right-click → **Open**.
 - First launch copies the bundled workspace seed, so the Axiom Core project and docs are already
   there.
-- Data stays at `%APPDATA%\com.axiom.core\axiom.db`; uninstalling does not delete it.
+- Data stays in the platform app-data folder (`%APPDATA%\com.axiom.core\axiom.db` on Windows);
+  uninstalling does not delete it.
+- Tagged releases are built by CI for all three platforms. See
+  [installer.md](docs/features/installer.md) for the pipeline, local build commands and the test
+  checklist.
 
-Detailed test checklist: [installer.md](docs/features/installer.md).
+### Environment overrides
 
-### Portable fallback
-
-If the setup does nothing when launched from the harness, use:
-
-```
-release/Axiom Core 0.1.0 portable.zip
-```
-
-Extract, then run `Start Axiom Core.cmd`. The portable build stores its workspace in `data\` and
-does not need an installer.
 | Variable | Effect |
 | --- | --- |
 | `AXIOM_START_HIDDEN=1` | Start in the tray without opening a window |
