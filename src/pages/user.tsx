@@ -158,11 +158,7 @@ export default function UserPage() {
       setApi(status)
       setApiPort(String(status.port))
       setApiToken(status.token)
-      setApiNote(
-        status.restartRequired
-          ? 'Saved. Restart Axiom Core to bind the new port; the token works immediately after restart.'
-          : 'Saved. AI clients can use this endpoint now.',
-      )
+      setApiNote('Saved. Restart Axiom Core to apply port or token changes to the local server.')
     } catch (error) {
       setApiNote(error instanceof Error ? error.message : String(error))
     } finally {
