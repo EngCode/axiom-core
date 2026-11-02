@@ -124,7 +124,11 @@ jobs:
             "Error writing temporary file", run `scripts/installer-doctor.ps1` or use the MSI.
           releaseDraft: true
           prerelease: false
-          includeUpdaterJson: true
+          uploadUpdaterJson: true
+          # The Windows updater installs per-user through the NSIS setup; the MSI
+          # is offered as a manual machine-wide alternative. Without this the
+          # action would point latest.json at the MSI and trigger a UAC prompt.
+          updaterJsonPreferNsis: true
           args: ${{ steps.bundle.outputs.args }}
 
       - name: Build only
