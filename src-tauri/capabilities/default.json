@@ -3,5 +3,11 @@
   "identifier": "default",
   "description": "Permissions for Axiom Core's main and quick-capture windows",
   "windows": ["main", "capture"],
-  "permissions": ["core:default", "core:window:allow-close"]
+  "permissions": [
+    "core:default",
+    "core:app:default",
+    "core:window:allow-close",
+    "updater:default",
+    "process:default"
+  ]
 }

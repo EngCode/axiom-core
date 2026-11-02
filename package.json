@@ -1,7 +1,7 @@
 {
   "name": "axiom-core",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "engines": {
     "node": ">=20.19"
@@ -9,15 +9,20 @@
   "scripts": {
     "dev": "vite",
     "build": "node node_modules/typescript/bin/tsc --noEmit && node node_modules/vite/bin/vite.js build",
-    "build:win": "tauri build --bundles nsis",
+    "build:win": "tauri build --bundles nsis,msi",
+    "build:win:update": "tauri build --bundles nsis,msi --config src-tauri/tauri.updater.conf.json",
     "build:linux": "tauri build --bundles deb,appimage",
+    "build:linux:update": "tauri build --bundles deb,appimage --config src-tauri/tauri.updater.conf.json",
     "build:mac": "tauri build --bundles dmg,app",
+    "build:mac:update": "tauri build --bundles dmg,app --config src-tauri/tauri.updater.conf.json",
     "preview": "vite preview",
     "typecheck": "node node_modules/typescript/bin/tsc --noEmit",
     "tauri": "tauri"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.12.4",
+    "@tauri-apps/plugin-process": "^2.3.1",
+    "@tauri-apps/plugin-updater": "^2.9.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.61.0",
     "react": "^19.3.1",

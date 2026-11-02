@@ -31,6 +31,27 @@ export interface MediaCategory {
 
 export type ScanRootKind = 'auto' | 'movies' | 'series' | 'games' | 'books' | 'music'
 
+/** Payload for creating or renaming a category. */
+export interface CategoryInput {
+  id?: string | null
+  name: string
+  appliesTo: string[]
+  hidden: boolean
+  sortOrder?: number
+}
+
+/** Partial edit of one title. An empty `categoryId` clears the category. */
+export interface LibraryItemPatch {
+  status?: string
+  rating?: number
+  clearRating?: boolean
+  notes?: string
+  categoryId?: string
+  title?: string
+  originalTitle?: string
+  year?: number
+}
+
 /** A folder the scanner owns. The kind and category seed how its files group. */
 export interface ScanRoot {
   id: string

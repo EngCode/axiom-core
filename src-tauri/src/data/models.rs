@@ -429,6 +429,46 @@ pub struct LibraryItemDetail {
     pub seasons: Vec<LibrarySeasonView>,
     pub copies: Vec<LibraryCopyView>,
 }
+
+/// Input for creating or updating a Library category. An omitted `id` creates a
+/// new row; the key is derived once and stays stable across renames.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CategoryInput {
+    #[serde(default)]
+    pub id: Option<String>,
+    pub name: String,
+    #[serde(default)]
+    pub applies_to: Vec<String>,
+    #[serde(default)]
+    pub hidden: bool,
+    #[serde(default)]
+    pub sort_order: Option<i64>,
+}
+
+/// Partial edit of one Library title. Missing fields are left untouched; an
+/// empty `category_id` clears the category and `clear_rating` removes the score.
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LibraryItemPatch {
+    #[serde(default)]
+    pub status: Option<String>,
+    #[serde(default)]
+    pub rating: Option<f64>,
+    #[serde(default)]
+    pub clear_rating: bool,
+    #[serde(default)]
+    pub notes: Option<String>,
+    #[serde(default)]
+    pub category_id: Option<String>,
+    #[serde(default)]
+    pub title: Option<String>,
+    #[serde(default)]
+    pub original_title: Option<String>,
+    #[serde(default)]
+    pub year: Option<i64>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Identity {

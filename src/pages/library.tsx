@@ -11,17 +11,24 @@
 
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import {
+  ArrowDown,
+  ArrowUp,
   ChevronLeft,
   ChevronRight,
   CircleCheckBig,
+  Eye,
+  EyeOff,
   FolderSearch,
   HardDrive,
   ImagePlus,
   Library,
   LoaderCircle,
+  Pencil,
   Plus,
   RefreshCw,
+  Save,
   Search,
+  Tags,
   Trash,
   TriangleAlert,
   X,
@@ -42,6 +49,7 @@ import {
 } from '@/components/ui'
 import { coverSrc, pickMediaCover, removeMediaCover } from '@/lib/covers'
 import {
+  deleteCategory,
   deleteScanRoot,
   loadLibraryItem,
   loadLibraryOverview,
@@ -49,8 +57,11 @@ import {
   previewLibraryRebuild,
   queryLibrary,
   rebuildLibrary,
+  reorderCategories,
+  saveCategory,
   saveScanRoot,
   setLibraryCover,
+  updateLibraryItem,
 } from '@/lib/library-api'
 import { pickMediaFolder } from '@/lib/library-scan'
 import type {
@@ -190,17 +201,23 @@ const LibraryTile = memo(function LibraryTile({
 
 function ItemDrawer({
   itemId,
+  categories,
   onClose,
-  onCoverChanged,
+  onChanged,
 }: {
   itemId: string | null
+  categories: LibraryCategoryCount[]
   onClose: () => void
-  onCoverChanged: () => void
+  onChanged: () => void
 }) {
   const [detail, setDetail] = useState<LibraryItemDetail | null>(null)
   const [loading, setLoading] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [draftStatus, setDraftStatus] = useState('acquired')
+  const [draftRating, setDraftRating] = useState('')
+  const [draftNotes, setDraftNotes] = useState('')
+  const [draftCategory, setDraftCategory] = useState('')
 
   useEffect(() => {
     if (!itemId) {
@@ -225,6 +242,14 @@ function ItemDrawer({
     }
   }, [itemId])
 
+  useEffect(() => {
+    if (!detail) return
+    setDraftStatus(detail.item.status)
+    setDraftRating(detail.rating === null ? '' : String(detail.rating))
+    setDraftNotes(detail.notes)
+    setDraftCategory(detail.item.categoryId ?? '')
+  }, [detail])
+
   async function assignCover() {
     if (!detail) return
     setBusy(true)
@@ -234,7 +259,7 @@ function ItemDrawer({
       if (!path) return
       await setLibraryCover(detail.item.id, path)
       setDetail(await loadLibraryItem(detail.item.id))
-      onCoverChanged()
+      onChanged()
     } catch (coverError) {
       setError(errorMessage(coverError))
     } finally {
@@ -250,7 +275,7 @@ function ItemDrawer({
       await removeMediaCover(detail.item.coverPath).catch(() => {})
       await setLibraryCover(detail.item.id, null)
       setDetail(await loadLibraryItem(detail.item.id))
-      onCoverChanged()
+      onChanged()
     } catch (coverError) {
       setError(errorMessage(coverError))
     } finally {
@@ -258,7 +283,41 @@ function ItemDrawer({
     }
   }
 
+  async function saveEdits() {
+    if (!detail) return
+    setBusy(true)
+    setError(null)
+    try {
+      const rating = draftRating.trim()
+      await updateLibraryItem(detail.item.id, {
+        status: draftStatus,
+        rating: rating === '' ? undefined : Number(rating),
+        clearRating: rating === '',
+        notes: draftNotes,
+        categoryId: draftCategory,
+      })
+      setDetail(await loadLibraryItem(detail.item.id))
+      onChanged()
+    } catch (saveError) {
+      setError(errorMessage(saveError))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  function resetEdits() {
+    if (!detail) return
+    setDraftStatus(detail.item.status)
+    setDraftRating(detail.rating === null ? '' : String(detail.rating))
+    setDraftNotes(detail.notes)
+    setDraftCategory(detail.item.categoryId ?? '')
+    setError(null)
+  }
+
   const card = detail?.item
+  const applicableCategories = categories.filter(
+    (category) => !card || category.appliesTo.includes(card.kindKey),
+  )
 
   return (
     <Modal open={itemId !== null} onClose={onClose} label="Library item" className="max-w-3xl">
@@ -286,7 +345,13 @@ function ItemDrawer({
                   {card.title}
                 </h2>
                 <p className="mt-1 text-[11.5px] text-fg-muted">
-                  {[card.year, card.status.replace('_', ' ')].filter(Boolean).join(' · ')}
+                  {[
+                    card.year,
+                    card.status.replace('_', ' '),
+                    detail.rating === null ? null : `★ ${detail.rating}/10`,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
                 </p>
                 {detail.originalTitle ? (
                   <p className="mt-0.5 truncate text-[11px] text-fg-subtle">{detail.originalTitle}</p>
@@ -370,14 +435,75 @@ function ItemDrawer({
               </div>
             </div>
 
-            {detail.notes ? (
-              <div className="border-t border-line px-5 py-3">
-                <p className="mb-1 text-[10px] font-medium tracking-[0.14em] text-fg-subtle uppercase">
-                  Notes
-                </p>
-                <p className="text-[12px] leading-5 text-fg-muted">{detail.notes}</p>
+            <div className="border-t border-line px-5 py-3">
+              <p className="mb-2 text-[10px] font-medium tracking-[0.14em] text-fg-subtle uppercase">
+                Edit details
+              </p>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <Field label="Status">
+                  <Select
+                    value={draftStatus}
+                    onChange={(event) => setDraftStatus(event.target.value)}
+                    className="h-8 text-[11.5px]"
+                  >
+                    {STATUS_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+                <Field label="Rating">
+                  <Input
+                    type="number"
+                    min={0}
+                    max={10}
+                    step={0.5}
+                    value={draftRating}
+                    onChange={(event) => setDraftRating(event.target.value)}
+                    placeholder="0–10"
+                    className="h-8 text-[11.5px]"
+                  />
+                </Field>
+                <Field label="Category">
+                  <Select
+                    value={draftCategory}
+                    onChange={(event) => setDraftCategory(event.target.value)}
+                    className="h-8 text-[11.5px]"
+                  >
+                    <option value="">Uncategorised</option>
+                    {applicableCategories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
               </div>
-            ) : null}
+              <Field label="Notes" className="mt-3">
+                <textarea
+                  value={draftNotes}
+                  onChange={(event) => setDraftNotes(event.target.value)}
+                  rows={3}
+                  placeholder="Where it came from, subtitle notes, what to watch next…"
+                  className={cn(
+                    'w-full resize-y rounded-control border border-line bg-surface-2 px-3 py-2',
+                    'text-[12px] leading-5 text-fg transition-colors outline-none',
+                    'placeholder:text-fg-subtle hover:border-line-strong focus:border-accent/60 focus:ring-2 focus:ring-accent/20',
+                  )}
+                />
+              </Field>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <Button size="sm" variant="primary" onClick={() => void saveEdits()} disabled={busy}>
+                  <Save className="size-3.5" />
+                  Save changes
+                </Button>
+                <Button size="sm" variant="ghost" onClick={resetEdits} disabled={busy}>
+                  Reset
+                </Button>
+                {busy ? <LoaderCircle className="size-3.5 animate-spin text-fg-subtle" /> : null}
+              </div>
+            </div>
           </>
         )}
       </div>
@@ -825,6 +951,317 @@ function RootsDialog({
   )
 }
 
+//=====> Categories Dialog <=====//
+
+function CategoriesDialog({
+  open,
+  onClose,
+  overview,
+  onChanged,
+}: {
+  open: boolean
+  onClose: () => void
+  overview: LibraryOverview | null
+  onChanged: () => void
+}) {
+  const [name, setName] = useState('')
+  const [appliesTo, setAppliesTo] = useState<string[]>(['movies', 'series'])
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editingName, setEditingName] = useState('')
+  const [editingKinds, setEditingKinds] = useState<string[]>([])
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const categories = [...(overview?.categories ?? [])].sort(
+    (left, right) => left.sortOrder - right.sortOrder || left.name.localeCompare(right.name),
+  )
+  const kinds = (overview?.kinds ?? []).filter((kind) => kind.key !== 'anime')
+
+  useEffect(() => {
+    if (!open) {
+      setEditingId(null)
+      setError(null)
+      setName('')
+      setAppliesTo(['movies', 'series'])
+    }
+  }, [open])
+
+  function toggle(list: string[], setList: (next: string[]) => void, key: string) {
+    setList(list.includes(key) ? list.filter((value) => value !== key) : [...list, key])
+  }
+
+  async function run(action: () => Promise<unknown>) {
+    setBusy(true)
+    setError(null)
+    try {
+      await action()
+      onChanged()
+    } catch (actionError) {
+      setError(errorMessage(actionError))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function createCategory() {
+    const trimmed = name.trim()
+    if (!trimmed) {
+      setError('Give the category a name first.')
+      return
+    }
+    await run(async () => {
+      await saveCategory({
+        name: trimmed,
+        appliesTo: appliesTo.length > 0 ? appliesTo : ['movies', 'series'],
+        hidden: false,
+      })
+      setName('')
+      setAppliesTo(['movies', 'series'])
+    })
+  }
+
+  function startEditing(category: LibraryCategoryCount) {
+    setEditingId(category.id)
+    setEditingName(category.name)
+    setEditingKinds(category.appliesTo)
+    setError(null)
+  }
+
+  async function saveEditing(category: LibraryCategoryCount) {
+    const trimmed = editingName.trim()
+    if (!trimmed) {
+      setError('A category name cannot be empty.')
+      return
+    }
+    await run(async () => {
+      await saveCategory({
+        id: category.id,
+        name: trimmed,
+        appliesTo: editingKinds.length > 0 ? editingKinds : category.appliesTo,
+        hidden: category.hidden,
+        sortOrder: category.sortOrder,
+      })
+      setEditingId(null)
+    })
+  }
+
+  async function toggleHidden(category: LibraryCategoryCount) {
+    await run(() =>
+      saveCategory({
+        id: category.id,
+        name: category.name,
+        appliesTo: category.appliesTo,
+        hidden: !category.hidden,
+        sortOrder: category.sortOrder,
+      }),
+    )
+  }
+
+  async function move(category: LibraryCategoryCount, delta: number) {
+    const index = categories.findIndex((entry) => entry.id === category.id)
+    const target = index + delta
+    if (index < 0 || target < 0 || target >= categories.length) return
+    const next = [...categories]
+    const [row] = next.splice(index, 1)
+    next.splice(target, 0, row)
+    await run(() => reorderCategories(next.map((entry) => entry.id)))
+  }
+
+  async function remove(category: LibraryCategoryCount) {
+    if (
+      !window.confirm(
+        `Delete "${category.name}"? Its ${category.count} title(s) become uncategorised; files are never touched.`,
+      )
+    ) {
+      return
+    }
+    await run(() => deleteCategory(category.id))
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} label="Manage library categories" className="max-w-xl">
+      <div className="max-h-[80vh] overflow-y-auto p-5">
+        <h2 className="font-display text-[17px] font-semibold tracking-[-0.02em] text-fg">
+          Categories
+        </h2>
+        <p className="mt-1 text-[11.5px] leading-5 text-fg-muted">
+          Movies and Series use these data-driven groups. Renaming keeps the internal key, so saved
+          filters keep working; hiding removes a category from the tree without touching titles.
+        </p>
+
+        {error ? (
+          <p className="mt-3 rounded-control border border-danger/30 bg-danger/5 px-3 py-2 text-[11px] text-danger">
+            {error}
+          </p>
+        ) : null}
+
+        <div className="mt-4 space-y-2">
+          {categories.length === 0 ? (
+            <p className="rounded-control border border-line/60 bg-surface-2 px-3 py-4 text-center text-[11.5px] text-fg-subtle">
+              No categories yet. Add the first one below.
+            </p>
+          ) : (
+            categories.map((category) => (
+              <div
+                key={category.id}
+                className={cn(
+                  'rounded-control border border-line/60 bg-surface-2 px-3 py-2',
+                  category.hidden && 'opacity-60',
+                )}
+              >
+                {editingId === category.id ? (
+                  <div className="space-y-2">
+                    <Input
+                      value={editingName}
+                      onChange={(event) => setEditingName(event.target.value)}
+                      autoFocus
+                      aria-label="Category name"
+                    />
+                    <div className="flex flex-wrap gap-3">
+                      {kinds.map((kind) => (
+                        <label
+                          key={kind.key}
+                          className="flex items-center gap-1.5 text-[11px] text-fg-muted"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={editingKinds.includes(kind.key)}
+                            onChange={() => toggle(editingKinds, setEditingKinds, kind.key)}
+                            className="size-3.5 accent-[var(--accent)]"
+                          />
+                          {kind.name}
+                        </label>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        onClick={() => void saveEditing(category)}
+                        disabled={busy}
+                      >
+                        <Save className="size-3.5" />
+                        Save
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setEditingId(null)}
+                        disabled={busy}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[12px] font-medium text-fg">{category.name}</p>
+                      <p className="text-[10px] text-fg-subtle">
+                        {category.appliesTo.join(' · ') || 'all kinds'} · {category.count} title
+                        {category.count === 1 ? '' : 's'}
+                        {category.hidden ? ' · hidden' : ''}
+                      </p>
+                    </div>
+                    <IconButton
+                      label="Move up"
+                      onClick={() => void move(category, -1)}
+                      disabled={busy}
+                    >
+                      <ArrowUp className="size-3.5" />
+                    </IconButton>
+                    <IconButton
+                      label="Move down"
+                      onClick={() => void move(category, 1)}
+                      disabled={busy}
+                    >
+                      <ArrowDown className="size-3.5" />
+                    </IconButton>
+                    <IconButton
+                      label={category.hidden ? 'Show category' : 'Hide category'}
+                      onClick={() => void toggleHidden(category)}
+                      disabled={busy}
+                    >
+                      {category.hidden ? (
+                        <Eye className="size-3.5" />
+                      ) : (
+                        <EyeOff className="size-3.5" />
+                      )}
+                    </IconButton>
+                    <IconButton
+                      label="Rename category"
+                      onClick={() => startEditing(category)}
+                      disabled={busy}
+                    >
+                      <Pencil className="size-3.5" />
+                    </IconButton>
+                    <IconButton
+                      label="Delete category"
+                      onClick={() => void remove(category)}
+                      disabled={busy}
+                      className="hover:bg-danger/10 hover:text-danger"
+                    >
+                      <Trash className="size-3.5" />
+                    </IconButton>
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="mt-5 rounded-control border border-line bg-surface px-3 py-3">
+          <p className="text-[10px] font-medium tracking-[0.12em] text-fg-subtle uppercase">
+            New category
+          </p>
+          <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+            <Input
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') void createCategory()
+              }}
+              placeholder="Documentaries, K-Drama, Cartoons…"
+              aria-label="New category name"
+            />
+            <Button
+              variant="primary"
+              onClick={() => void createCategory()}
+              disabled={busy || !name.trim()}
+            >
+              <Plus className="size-3.5" />
+              Add
+            </Button>
+          </div>
+          <div className="mt-2 flex flex-wrap gap-3">
+            {kinds.map((kind) => (
+              <label
+                key={kind.key}
+                className="flex items-center gap-1.5 text-[11px] text-fg-muted"
+              >
+                <input
+                  type="checkbox"
+                  checked={appliesTo.includes(kind.key)}
+                  onChange={() => toggle(appliesTo, setAppliesTo, kind.key)}
+                  className="size-3.5 accent-[var(--accent)]"
+                />
+                {kind.name}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-4 flex items-center justify-between gap-2">
+          <p className="text-[10px] text-fg-subtle">Reordering saves automatically.</p>
+          <Button variant="secondary" size="sm" onClick={onClose}>
+            Close
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
 //=====> Library Page <=====//
 
 export default function LibraryPage() {
@@ -843,6 +1280,7 @@ export default function LibraryPage() {
   const [selectedItem, setSelectedItem] = useState<string | null>(null)
   const [rebuildOpen, setRebuildOpen] = useState(false)
   const [rootsOpen, setRootsOpen] = useState(false)
+  const [categoriesOpen, setCategoriesOpen] = useState(false)
   const requestId = useRef(0)
 
   const refreshOverview = useCallback(async () => {
@@ -945,6 +1383,10 @@ export default function LibraryPage() {
             >
               <RefreshCw className="size-4" />
             </IconButton>
+            <Button variant="secondary" onClick={() => setCategoriesOpen(true)}>
+              <Tags className="size-3.5" />
+              Categories
+            </Button>
             <Button variant="secondary" onClick={() => setRootsOpen(true)}>
               <HardDrive className="size-3.5" />
               Roots
@@ -1135,8 +1577,9 @@ export default function LibraryPage() {
 
       <ItemDrawer
         itemId={selectedItem}
+        categories={overview?.categories ?? []}
         onClose={() => setSelectedItem(null)}
-        onCoverChanged={() => {
+        onChanged={() => {
           refreshGrid()
           void refreshOverview()
         }}
@@ -1157,6 +1600,16 @@ export default function LibraryPage() {
         overview={overview}
         runs={runs}
         onChanged={() => void refreshOverview()}
+      />
+
+      <CategoriesDialog
+        open={categoriesOpen}
+        onClose={() => setCategoriesOpen(false)}
+        overview={overview}
+        onChanged={() => {
+          void refreshOverview()
+          refreshGrid()
+        }}
       />
     </div>
   )

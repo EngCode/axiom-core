@@ -148,9 +148,10 @@ The only library write path is `library_rebuild`, exposed as **Rebuild** on the 
    clean database copy, not a copy of a live WAL file. A rebuild with any root warning is refused
    before the backup is written, so an unplugged drive can never empty the index.
 4. **Replace the index** — inside one transaction: capture per-item user fields (status, rating,
-   notes, cover, original title, provider ids), delete `media_copies` then `media_items`, import
-   the new groups, restore user fields by item id, update `scan_roots.last_scan_at` and append a
-   `scan_runs` row. Either the whole rebuild commits or nothing changes.
+   notes, cover, title, original title, year, category, provider ids), delete `media_copies` then
+   `media_items`, import the new groups, restore user fields by item id, update
+   `scan_roots.last_scan_at` and append a `scan_runs` row. Either the whole rebuild commits or
+   nothing changes.
 5. **Report** — imported/removed items and copies, duration and the backup path.
 
 Workspace tables are not touched. If a title's grouping identity changes (renamed folder, moved
@@ -162,10 +163,12 @@ root), its id changes and user fields cannot be matched; the backup is the recov
 | --- | --- |
 | `pick_media_folder` | native folder picker for a new root |
 | `library_categories` | list categories |
+| `library_save_category` / `library_delete_category` / `library_reorder_categories` | create, rename, hide, reorder or delete categories; a rename keeps the key |
 | `library_roots` / `save_scan_root` / `delete_scan_root` | manage scan roots |
 | `library_overview` | totals, kinds, category counts (`byKind`), volumes, roots |
 | `library_query` | one page of title cards; filters, sort and pagination run in SQLite |
 | `library_item` | one title with seasons and per-file copies |
+| `library_update_item` | edit status, rating, notes, category, title, original title or year |
 | `library_set_cover` | set or clear an item's poster |
 | `library_recent_runs` | recent rebuild history |
 | `library_rebuild_preview` | dry run |
@@ -206,7 +209,8 @@ Read-only routes mirror the bridge; see [LOCAL-API.md](../resources/LOCAL-API.md
 - Derived, never stored: **missing** (volume online, path gone), **offline** (volume not
   connected), **duplicate** (more than one copy), **unlinked** (scanned file with no item).
 
-The v2 UI shows and preserves `status` but does not edit it yet.
+The item drawer edits `status`, `rating`, `notes` and `category`; the Library also has a category
+manager for creating, renaming, hiding, reordering and deleting categories.
 
 ## Milestones
 
@@ -215,7 +219,7 @@ The v2 UI shows and preserves `status` but does not edit it yet.
 | **M1 — Catalog** | kinds nav, item grid, volumes, wishlist, search, detail | partial — grid, categories, detail, covers |
 | **M2 — Scanner** | roots, walker, filename parsing, grouping, rebuild, health | shipped — roots, parsing, series grouping, rebuild |
 | **M3 — Metadata** | TMDB/IGDB fetch queue, covers, local cache, refresh | partial — manual covers only |
-| **M4 — Depth** | episode progress, playtime, ratings, saved filters | not started |
+| **M4 — Depth** | episode progress, playtime, ratings, saved filters | partial — ratings; progress/saved filters pending |
 | **M5 — Portability** | import/export, bulk edit, duplicate merge | not started |
 
 ## What exists today
@@ -226,12 +230,14 @@ The v2 UI shows and preserves `status` but does not edit it yet.
 - Server-side paginated query, item detail and read-only HTTP routes.
 - A Library page with a Movies/Series → English/Arabic/Anime tree, search, filters, pager,
   poster drawer and rebuild/roots dialogs.
+- Category manager (create/rename/hide/reorder/delete) and item editing for status, rating, notes,
+  category and title overrides; all of it survives a rebuild.
 
 ## What does not exist yet
 
 - Volume detection by GUID/serial and drive polling.
 - Incremental scans; every update is a full rebuild.
 - Metadata providers, automatic posters from the network or API keys.
-- Progress/status/rating/notes editing from the drawer.
-- Saved filters and a category editor UI.
+- Saved filters.
+- Per-episode watch progress and playtime tracking.
 - Derived missing/offline/duplicate health views.

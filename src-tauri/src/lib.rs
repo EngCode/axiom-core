@@ -28,8 +28,9 @@ pub mod library_scan;
 use data::api::{IssueDraft, IssuePatch};
 use data::db;
 use data::models::{
-    AppState as PersistedState, Issue, LibraryItemDetail, LibraryOverview, LibraryPage, LibraryQuery,
-    LibrarySnapshot, MediaCategory, MediaCopy, MediaItem, Note, Project, ScanRoot, Volume,
+    AppState as PersistedState, CategoryInput, Issue, LibraryItemDetail, LibraryItemPatch,
+    LibraryOverview, LibraryPage, LibraryQuery, LibrarySnapshot, MediaCategory, MediaCopy, MediaItem,
+    Note, Project, ScanRoot, Volume,
 };
 use std::sync::Mutex;
 use tauri::State;
@@ -361,6 +362,37 @@ fn delete_scan_root(pool: State<'_, Db>, id: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn library_save_category(
+    pool: State<'_, Db>,
+    input: CategoryInput,
+) -> Result<MediaCategory, String> {
+    let connection = lock_db(&pool)?;
+    library_db::save_category(&connection, &input).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn library_delete_category(pool: State<'_, Db>, id: String) -> Result<(), String> {
+    let connection = lock_db(&pool)?;
+    library_db::delete_category(&connection, &id).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn library_reorder_categories(pool: State<'_, Db>, ids: Vec<String>) -> Result<(), String> {
+    let connection = lock_db(&pool)?;
+    library_db::reorder_categories(&connection, &ids).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn library_update_item(
+    pool: State<'_, Db>,
+    id: String,
+    patch: LibraryItemPatch,
+) -> Result<(), String> {
+    let connection = lock_db(&pool)?;
+    library_db::update_item(&connection, &id, &patch).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
 fn library_overview(pool: State<'_, Db>) -> Result<LibraryOverview, String> {
     let connection = lock_db(&pool)?;
     library_db::overview(&connection).map_err(|error| error.to_string())
@@ -521,6 +553,10 @@ pub fn run() {
             library_roots,
             save_scan_root,
             delete_scan_root,
+            library_save_category,
+            library_delete_category,
+            library_reorder_categories,
+            library_update_item,
             library_overview,
             library_query,
             library_item,
@@ -542,6 +578,8 @@ pub fn run() {
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             schedule_main_window(app);
         }))
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(|app, _shortcut, event| {

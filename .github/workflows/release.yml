@@ -10,6 +10,9 @@ concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build (${{ matrix.label }})
@@ -20,20 +23,32 @@ jobs:
         include:
           - label: Windows x64
             platform: windows-latest
-            script: build:win
-            args: --bundles nsis
+            args: --bundles nsis,msi
           - label: Linux x64
             platform: ubuntu-22.04
-            script: build:linux
             args: --bundles deb,appimage
           - label: macOS Apple Silicon
             platform: macos-14
-            script: build:mac
             args: --bundles dmg,app
           - label: macOS Intel
             platform: macos-15-intel
-            script: build:mac
             args: --bundles dmg,app
+
+    env:
+      # Updater signatures (minisign). Generate with `pnpm tauri signer generate`.
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+      # Windows Authenticode (base64 PFX). Leave empty to ship an unsigned smoke build.
+      AXIOM_WINDOWS_CERTIFICATE: ${{ secrets.AXIOM_WINDOWS_CERTIFICATE }}
+      AXIOM_WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.AXIOM_WINDOWS_CERTIFICATE_PASSWORD }}
+      AXIOM_WINDOWS_TIMESTAMP_URL: ${{ vars.AXIOM_WINDOWS_TIMESTAMP_URL }}
+      # macOS Developer ID certificate and notarization.
+      APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+      APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+      APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
     steps:
       - name: Checkout
@@ -73,6 +88,20 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Resolve bundle arguments
+        id: bundle
+        shell: bash
+        run: |
+          args="${{ matrix.args }}"
+          if [ -n "${TAURI_SIGNING_PRIVATE_KEY:-}" ]; then
+            args="$args --config src-tauri/tauri.updater.conf.json"
+            echo "updater=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "updater=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "args=$args" >> "$GITHUB_OUTPUT"
+          echo "Bundling with: $args"
+
       - name: Build and publish
         if: startsWith(github.ref, 'refs/tags/')
         uses: tauri-apps/tauri-action@v0
@@ -83,19 +112,31 @@ jobs:
           releaseName: "Axiom Core ${{ github.ref_name }}"
           releaseBody: |
             Installers for Windows, Linux and macOS are attached below.
-            Unsigned builds: your OS may ask you to confirm before opening them.
+
+            - **Windows:** use `Axiom Core_<version>_x64-setup.exe` for a per-user install with no
+              admin prompt, or `Axiom Core_<version>_x64_en-US.msi` for a machine-wide install
+              (requires elevation).
+            - **Linux:** the `.deb` or the `.AppImage`.
+            - **macOS:** the `.dmg`.
+
+            Installed copies of Axiom Core 0.2.0 or newer update in place from
+            **Settings → Updates**; no uninstall is required. If the NSIS setup reports
+            "Error writing temporary file", run `scripts/installer-doctor.ps1` or use the MSI.
           releaseDraft: true
           prerelease: false
-          args: ${{ matrix.args }}
+          includeUpdaterJson: true
+          args: ${{ steps.bundle.outputs.args }}
 
       - name: Build only
         if: ${{ !startsWith(github.ref, 'refs/tags/') }}
-        run: pnpm run ${{ matrix.script }}
+        run: pnpm tauri build ${{ steps.bundle.outputs.args }}
 
       - name: Upload build output
         if: ${{ !startsWith(github.ref, 'refs/tags/') }}
         uses: actions/upload-artifact@v4
         with:
           name: axiom-core-${{ matrix.label }}
-          path: src-tauri/target/release/bundle/**
+          path: |
+            src-tauri/target/release/bundle/**
+            src-tauri/target/release/latest.json
           if-no-files-found: warn

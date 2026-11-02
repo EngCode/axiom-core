@@ -18,9 +18,9 @@ use rusqlite::{params, params_from_iter, Connection, OptionalExtension, Result a
 use serde::Serialize;
 
 use crate::data::models::{
-    LibraryCard, LibraryCategoryCount, LibraryCopyView, LibraryCount, LibraryItemDetail,
-    LibraryOverview, LibraryPage, LibraryQuery, LibrarySeasonView, LibraryVolumeCount,
-    MediaCategory, ScanRoot,
+    CategoryInput, LibraryCard, LibraryCategoryCount, LibraryCopyView, LibraryCount,
+    LibraryItemDetail, LibraryItemPatch, LibraryOverview, LibraryPage, LibraryQuery,
+    LibrarySeasonView, LibraryVolumeCount, MediaCategory, ScanRoot,
 };
 use crate::library_scan::{self, ScanConfig, ScanFile, ScanGroup};
 
@@ -183,6 +183,199 @@ pub fn save_root(
 
 pub fn delete_root(connection: &Connection, id: &str) -> SqlResult<()> {
     connection.execute("DELETE FROM scan_roots WHERE id = ?1", params![id])?;
+    Ok(())
+}
+
+//===> Category Editing <===//
+
+/// Statuses the User can set from the item drawer. Kept next to the update
+/// function so the UI and the SQL constraint cannot drift apart.
+pub const ITEM_STATUSES: [&str; 6] = [
+    "wishlist",
+    "downloading",
+    "acquired",
+    "in_progress",
+    "completed",
+    "dropped",
+];
+
+fn slugify(name: &str) -> String {
+    let mut slug = String::new();
+    let mut pending_dash = false;
+    for character in name.chars().flat_map(char::to_lowercase) {
+        if character.is_ascii_alphanumeric() {
+            slug.push(character);
+            pending_dash = false;
+        } else if !slug.is_empty() && !pending_dash {
+            slug.push('-');
+            pending_dash = true;
+        }
+    }
+    let slug = slug.trim_matches('-').to_string();
+    if slug.is_empty() {
+        "category".to_string()
+    } else {
+        slug
+    }
+}
+
+fn unique_category_key(connection: &Connection, base: &str) -> SqlResult<String> {
+    let mut candidate = base.to_string();
+    let mut suffix = 2;
+    loop {
+        let taken: bool = connection.query_row(
+            "SELECT EXISTS(SELECT 1 FROM media_categories WHERE key = ?1)",
+            params![candidate],
+            |row| row.get(0),
+        )?;
+        if !taken {
+            return Ok(candidate);
+        }
+        candidate = format!("{base}-{suffix}");
+        suffix += 1;
+    }
+}
+
+fn media_kind_keys(connection: &Connection) -> SqlResult<Vec<String>> {
+    let mut statement =
+        connection.prepare("SELECT key FROM media_kinds ORDER BY sort_order, key")?;
+    let rows = statement
+        .query_map([], |row| row.get::<_, String>(0))?
+        .collect::<SqlResult<Vec<_>>>()?;
+    Ok(rows)
+}
+
+/// Create a category, or rename/hide/reorder one when `input.id` is present.
+/// Renaming keeps the key so links and saved filters keep working.
+pub fn save_category(connection: &Connection, input: &CategoryInput) -> SqlResult<MediaCategory> {
+    let name = input.name.trim().to_string();
+    if name.is_empty() {
+        return Err(rusqlite::Error::InvalidParameterName(
+            "category name is empty".to_string(),
+        ));
+    }
+
+    let kind_keys = media_kind_keys(connection)?;
+    let mut applies_to: Vec<String> = Vec::new();
+    for key in &input.applies_to {
+        let key = key.trim();
+        if kind_keys.iter().any(|known| known == key) && !applies_to.iter().any(|seen| seen == key)
+        {
+            applies_to.push(key.to_string());
+        }
+    }
+    if applies_to.is_empty() {
+        applies_to = vec!["movies".to_string(), "series".to_string()];
+    }
+    let applies_json = serde_json::to_string(&applies_to).unwrap_or_else(|_| "[]".to_string());
+
+    //===> Update An Existing Category <===//
+    if let Some(id) = input
+        .id
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    {
+        let existing = connection
+            .query_row(
+                "SELECT key, sort_order FROM media_categories WHERE id = ?1",
+                params![id],
+                |row| Ok((row.get::<_, String>(0)?, row.get::<_, i64>(1)?)),
+            )
+            .optional()?;
+        let Some((key, current_order)) = existing else {
+            return Err(rusqlite::Error::InvalidParameterName(format!(
+                "unknown category: {id}"
+            )));
+        };
+        let sort_order = input.sort_order.unwrap_or(current_order);
+        connection.execute(
+            "UPDATE media_categories
+             SET name = ?2, applies_to = ?3, hidden = ?4, sort_order = ?5
+             WHERE id = ?1",
+            params![id, name, applies_json, i64::from(input.hidden), sort_order],
+        )?;
+        return Ok(MediaCategory {
+            id: id.to_string(),
+            key,
+            name,
+            sort_order,
+            hidden: input.hidden,
+            applies_to,
+        });
+    }
+
+    //===> Create A New Category <===//
+    let key = unique_category_key(connection, &slugify(&name))?;
+    let id = format!("cat-{key}");
+    let sort_order = match input.sort_order {
+        Some(value) => value,
+        None => connection.query_row(
+            "SELECT COALESCE(MAX(sort_order), 0) + 1 FROM media_categories",
+            [],
+            |row| row.get(0),
+        )?,
+    };
+    connection.execute(
+        "INSERT INTO media_categories (id, key, name, sort_order, hidden, applies_to, created_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, datetime('now'))",
+        params![
+            id,
+            key,
+            name,
+            sort_order,
+            i64::from(input.hidden),
+            applies_json
+        ],
+    )?;
+    Ok(MediaCategory {
+        id,
+        key,
+        name,
+        sort_order,
+        hidden: input.hidden,
+        applies_to,
+    })
+}
+
+/// Deleting a category leaves its titles in place; the foreign key clears their
+/// category. Hiding is the non-destructive alternative offered by the UI.
+pub fn delete_category(connection: &Connection, id: &str) -> SqlResult<()> {
+    connection.execute("DELETE FROM media_categories WHERE id = ?1", params![id])?;
+    Ok(())
+}
+
+/// Persist the order produced by the category manager. Ids that are not in the
+/// list keep their relative order after the listed ones.
+pub fn reorder_categories(connection: &Connection, ids: &[String]) -> SqlResult<()> {
+    for (index, id) in ids.iter().enumerate() {
+        connection.execute(
+            "UPDATE media_categories SET sort_order = ?2 WHERE id = ?1",
+            params![id, (index as i64) + 1],
+        )?;
+    }
+
+    // A partial list (for example a filtered manager) must not leave two rows
+    // with the same sort_order, so unlisted categories move after the listed
+    // ones in their current order.
+    let listed: Vec<String> = ids.iter().map(|id| id.trim().to_string()).collect();
+    let remaining: Vec<String> = {
+        let mut statement =
+            connection.prepare("SELECT id FROM media_categories ORDER BY sort_order, name")?;
+        let rows = statement
+            .query_map([], |row| row.get::<_, String>(0))?
+            .collect::<SqlResult<Vec<_>>>()?;
+        rows
+    }
+    .into_iter()
+    .filter(|id| !listed.contains(id))
+    .collect();
+    for (offset, id) in remaining.iter().enumerate() {
+        connection.execute(
+            "UPDATE media_categories SET sort_order = ?2 WHERE id = ?1",
+            params![id, (ids.len() as i64) + (offset as i64) + 1],
+        )?;
+    }
     Ok(())
 }
 
@@ -524,12 +717,13 @@ fn write_plan(connection: &mut Connection, plan: &ScanPlan) -> SqlResult<ImportS
         transaction.query_row("SELECT COUNT(*) FROM media_items", [], |row| row.get(0))?;
 
     //===> Keep Per-Item User Fields <===//
-    // A rebuild replaces the scanner's rows, but notes, ratings, status and
-    // covers belong to the user. Item ids are stable, so they are restored by id
-    // after the rescan.
+    // A rebuild replaces the scanner's rows, but notes, ratings, status, covers
+    // and manual title/category edits belong to the user. Item ids are stable,
+    // so they are restored by id after the rescan.
     let user_fields = {
         let mut statement = transaction.prepare(
-            "SELECT id, status, rating, notes, cover_path, original_title, provider_ids_json
+            "SELECT id, title, sort_title, year, status, rating, notes, cover_path,
+                    original_title, provider_ids_json, category_id
              FROM media_items",
         )?;
         let rows = statement
@@ -537,11 +731,15 @@ fn write_plan(connection: &mut Connection, plan: &ScanPlan) -> SqlResult<ImportS
                 Ok((
                     row.get::<_, String>(0)?,
                     row.get::<_, String>(1)?,
-                    row.get::<_, Option<f64>>(2)?,
-                    row.get::<_, String>(3)?,
-                    row.get::<_, Option<String>>(4)?,
-                    row.get::<_, Option<String>>(5)?,
+                    row.get::<_, Option<String>>(2)?,
+                    row.get::<_, Option<i64>>(3)?,
+                    row.get::<_, String>(4)?,
+                    row.get::<_, Option<f64>>(5)?,
                     row.get::<_, String>(6)?,
+                    row.get::<_, Option<String>>(7)?,
+                    row.get::<_, Option<String>>(8)?,
+                    row.get::<_, String>(9)?,
+                    row.get::<_, Option<String>>(10)?,
                 ))
             })?
             .collect::<SqlResult<Vec<_>>>()?;
@@ -553,20 +751,38 @@ fn write_plan(connection: &mut Connection, plan: &ScanPlan) -> SqlResult<ImportS
 
     let (items, copies) = write_groups(&transaction, &plan.groups, &volume_by_root)?;
 
-    for (id, status, rating, notes, cover_path, original_title, provider_ids) in user_fields {
+    for (
+        id,
+        title,
+        sort_title,
+        year,
+        status,
+        rating,
+        notes,
+        cover_path,
+        original_title,
+        provider_ids,
+        category_id,
+    ) in user_fields
+    {
         transaction.execute(
             "UPDATE media_items
-             SET status = ?2, rating = ?3, notes = ?4, cover_path = ?5,
-                 original_title = ?6, provider_ids_json = ?7
+             SET title = ?2, sort_title = ?3, year = ?4, status = ?5, rating = ?6,
+                 notes = ?7, cover_path = ?8, original_title = ?9, provider_ids_json = ?10,
+                 category_id = ?11
              WHERE id = ?1",
             params![
                 id,
+                title,
+                sort_title,
+                year,
                 status,
                 rating,
                 notes,
                 cover_path,
                 original_title,
-                provider_ids
+                provider_ids,
+                category_id
             ],
         )?;
     }
@@ -578,12 +794,27 @@ fn write_plan(connection: &mut Connection, plan: &ScanPlan) -> SqlResult<ImportS
         )?;
     }
 
+    // A rebuild can finish inside the same second as the previous one, so the
+    // run id includes nanoseconds. Using only `timestamp()` would violate the
+    // scan_runs primary key and roll the whole rebuild back.
+    let run_id = format!(
+        "run-{}",
+        library_scan::stable_id(&format!(
+            "{}.{:09}",
+            timestamp(),
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .map(|duration| duration.subsec_nanos())
+                .unwrap_or(0)
+        ))
+    );
+
     transaction.execute(
         "INSERT INTO scan_runs
             (id, started_at, finished_at, kind, status, root_count, item_count, copy_count, message)
          VALUES (?1, datetime('now'), datetime('now'), 'rebuild', 'ok', ?2, ?3, ?4, ?5)",
         params![
-            format!("run-{}", library_scan::stable_id(&timestamp())),
+            run_id,
             plan.roots.len() as i64,
             items,
             copies,
@@ -1015,6 +1246,117 @@ pub fn set_cover(connection: &Connection, id: &str, path: Option<&str>) -> SqlRe
     Ok(())
 }
 
+/// Edit the user-owned fields of one Library title. Status, rating, notes,
+/// category and title/year overrides are captured by a rebuild and restored by
+/// item id; only scanned paths and counts are re-derived.
+pub fn update_item(connection: &Connection, id: &str, patch: &LibraryItemPatch) -> SqlResult<()> {
+    let exists: bool = connection.query_row(
+        "SELECT EXISTS(SELECT 1 FROM media_items WHERE id = ?1)",
+        params![id],
+        |row| row.get(0),
+    )?;
+    if !exists {
+        return Err(rusqlite::Error::InvalidParameterName(format!(
+            "unknown library item: {id}"
+        )));
+    }
+
+    if let Some(status) = patch
+        .status
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    {
+        if !ITEM_STATUSES.contains(&status) {
+            return Err(rusqlite::Error::InvalidParameterName(format!(
+                "unknown status: {status}"
+            )));
+        }
+        connection.execute(
+            "UPDATE media_items SET status = ?2, updated_at = ?3 WHERE id = ?1",
+            params![id, status, timestamp()],
+        )?;
+    }
+
+    if patch.clear_rating {
+        connection.execute(
+            "UPDATE media_items SET rating = NULL, updated_at = ?2 WHERE id = ?1",
+            params![id, timestamp()],
+        )?;
+    } else if let Some(rating) = patch.rating {
+        connection.execute(
+            "UPDATE media_items SET rating = ?2, updated_at = ?3 WHERE id = ?1",
+            params![id, rating.clamp(0.0, 10.0), timestamp()],
+        )?;
+    }
+
+    if let Some(notes) = &patch.notes {
+        connection.execute(
+            "UPDATE media_items SET notes = ?2, updated_at = ?3 WHERE id = ?1",
+            params![id, notes, timestamp()],
+        )?;
+    }
+
+    if let Some(category) = &patch.category_id {
+        let category = category.trim();
+        if category.is_empty() {
+            connection.execute(
+                "UPDATE media_items SET category_id = NULL, updated_at = ?2 WHERE id = ?1",
+                params![id, timestamp()],
+            )?;
+        } else {
+            let category_id = normalize_id(category, "cat-");
+            let known: bool = connection.query_row(
+                "SELECT EXISTS(SELECT 1 FROM media_categories WHERE id = ?1)",
+                params![category_id],
+                |row| row.get(0),
+            )?;
+            if !known {
+                return Err(rusqlite::Error::InvalidParameterName(format!(
+                    "unknown category: {category}"
+                )));
+            }
+            connection.execute(
+                "UPDATE media_items SET category_id = ?2, updated_at = ?3 WHERE id = ?1",
+                params![id, category_id, timestamp()],
+            )?;
+        }
+    }
+
+    if let Some(title) = patch.title.as_deref().map(str::trim) {
+        if title.is_empty() {
+            return Err(rusqlite::Error::InvalidParameterName(
+                "title is empty".to_string(),
+            ));
+        }
+        connection.execute(
+            "UPDATE media_items SET title = ?2, sort_title = ?3, updated_at = ?4 WHERE id = ?1",
+            params![id, title, title.to_lowercase(), timestamp()],
+        )?;
+    }
+
+    if let Some(original_title) = &patch.original_title {
+        let value = original_title.trim();
+        connection.execute(
+            "UPDATE media_items SET original_title = ?2, updated_at = ?3 WHERE id = ?1",
+            params![
+                id,
+                if value.is_empty() { None } else { Some(value) },
+                timestamp()
+            ],
+        )?;
+    }
+
+    if let Some(year) = patch.year {
+        connection.execute(
+            "UPDATE media_items SET year = ?2, updated_at = ?3 WHERE id = ?1",
+            params![id, if year > 0 { Some(year) } else { None }, timestamp()],
+        )?;
+    }
+
+    Ok(())
+}
+
 //=====> Tests <=====//
 
 #[cfg(test)]
@@ -1133,5 +1475,349 @@ mod tests {
                 category.key, category.count, category.by_kind
             );
         }
+    }
+
+    /// Each test gets a migrated throwaway database so the category seeds and
+    /// the v1 -> v2 migration are exercised exactly as they are in the app.
+    fn test_connection(label: &str) -> (Connection, PathBuf) {
+        let stamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|duration| duration.as_nanos())
+            .unwrap_or(0);
+        // The workspace temp folder is used instead of the OS temp folder: some
+        // agent sandboxes and antivirus profiles allow this process to write
+        // there but deny SQLite the same access.
+        let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../.axiom-data/test-tmp")
+            .join(format!(
+                "axiom-library-{label}-{}-{stamp}.db",
+                std::process::id()
+            ));
+        let connection = crate::data::db::open(&path).expect("open test database");
+        (connection, path)
+    }
+
+    fn remove_test_database(path: &Path) {
+        for suffix in ["", "-wal", "-shm"] {
+            let mut file = path.as_os_str().to_os_string();
+            file.push(suffix);
+            let _ = std::fs::remove_file(PathBuf::from(file));
+        }
+    }
+
+    fn insert_item(connection: &Connection, id: &str) {
+        connection
+            .execute(
+                "INSERT INTO media_items (id, kind_id, title, status, created_at, updated_at)
+                 VALUES (?1, 'kind-movies', 'Test Title', 'acquired', datetime('now'), datetime('now'))",
+                params![id],
+            )
+            .expect("insert item");
+    }
+
+    #[test]
+    fn categories_can_be_created_renamed_reordered_and_deleted() {
+        let (connection, path) = test_connection("categories");
+        let initial = categories(&connection).expect("seeded categories");
+        assert_eq!(initial.len(), 3);
+
+        let created = save_category(
+            &connection,
+            &CategoryInput {
+                id: None,
+                name: "Korean".to_string(),
+                applies_to: vec!["movies".to_string(), "series".to_string()],
+                hidden: false,
+                sort_order: None,
+            },
+        )
+        .expect("create category");
+        assert_eq!(created.key, "korean");
+        assert_eq!(created.id, "cat-korean");
+        assert_eq!(created.sort_order, 3);
+        assert_eq!(created.applies_to, vec!["movies", "series"]);
+
+        let renamed = save_category(
+            &connection,
+            &CategoryInput {
+                id: Some(created.id.clone()),
+                name: "Korean Drama".to_string(),
+                applies_to: vec!["series".to_string()],
+                hidden: true,
+                sort_order: Some(0),
+            },
+        )
+        .expect("rename category");
+        assert_eq!(renamed.key, "korean", "the key must survive a rename");
+        assert_eq!(renamed.name, "Korean Drama");
+        assert_eq!(renamed.sort_order, 0);
+        assert!(renamed.hidden);
+
+        let order = vec![
+            created.id.clone(),
+            "cat-english".to_string(),
+            "cat-arabic".to_string(),
+            "cat-anime".to_string(),
+        ];
+        reorder_categories(&connection, &order).expect("reorder");
+        let after = categories(&connection).expect("categories after reorder");
+        let keys: Vec<(&str, i64)> = after
+            .iter()
+            .map(|category| (category.key.as_str(), category.sort_order))
+            .collect();
+        assert_eq!(
+            keys,
+            vec![("korean", 1), ("english", 2), ("arabic", 3), ("anime", 4)]
+        );
+
+        // A partial list pushes the unlisted categories after it instead of
+        // leaving duplicate sort_order values behind.
+        reorder_categories(&connection, &["cat-arabic".to_string(), created.id.clone()])
+            .expect("partial reorder");
+        let partial: Vec<(String, i64)> = categories(&connection)
+            .expect("categories after partial reorder")
+            .into_iter()
+            .map(|category| (category.key, category.sort_order))
+            .collect();
+        assert_eq!(
+            partial,
+            vec![
+                ("arabic".to_string(), 1),
+                ("korean".to_string(), 2),
+                ("english".to_string(), 3),
+                ("anime".to_string(), 4),
+            ]
+        );
+
+        delete_category(&connection, &created.id).expect("delete category");
+        assert_eq!(categories(&connection).expect("categories").len(), 3);
+
+        remove_test_database(&path);
+    }
+
+    #[test]
+    fn item_edits_persist_and_can_be_cleared() {
+        let (connection, path) = test_connection("item-edit");
+        insert_item(&connection, "item-test");
+
+        update_item(
+            &connection,
+            "item-test",
+            &LibraryItemPatch {
+                status: Some("in_progress".to_string()),
+                rating: Some(8.5),
+                notes: Some("Halfway through".to_string()),
+                category_id: Some("arabic".to_string()),
+                title: Some("Renamed Title".to_string()),
+                original_title: Some("Original Title".to_string()),
+                year: Some(2024),
+                ..Default::default()
+            },
+        )
+        .expect("update item");
+
+        let row = connection
+            .query_row(
+                "SELECT status, rating, notes, category_id, title, sort_title, original_title, year
+                 FROM media_items WHERE id = 'item-test'",
+                [],
+                |row| {
+                    Ok((
+                        row.get::<_, String>(0)?,
+                        row.get::<_, Option<f64>>(1)?,
+                        row.get::<_, String>(2)?,
+                        row.get::<_, Option<String>>(3)?,
+                        row.get::<_, String>(4)?,
+                        row.get::<_, Option<String>>(5)?,
+                        row.get::<_, Option<String>>(6)?,
+                        row.get::<_, Option<i64>>(7)?,
+                    ))
+                },
+            )
+            .expect("read item");
+        assert_eq!(row.0, "in_progress");
+        assert_eq!(row.1, Some(8.5));
+        assert_eq!(row.2, "Halfway through");
+        assert_eq!(row.3.as_deref(), Some("cat-arabic"));
+        assert_eq!(row.4, "Renamed Title");
+        assert_eq!(row.5.as_deref(), Some("renamed title"));
+        assert_eq!(row.6.as_deref(), Some("Original Title"));
+        assert_eq!(row.7, Some(2024));
+
+        // Clearing the rating and the category is how the UI removes them.
+        update_item(
+            &connection,
+            "item-test",
+            &LibraryItemPatch {
+                clear_rating: true,
+                category_id: Some(String::new()),
+                ..Default::default()
+            },
+        )
+        .expect("clear rating and category");
+        let cleared = connection
+            .query_row(
+                "SELECT rating, category_id FROM media_items WHERE id = 'item-test'",
+                [],
+                |row| {
+                    Ok((
+                        row.get::<_, Option<f64>>(0)?,
+                        row.get::<_, Option<String>>(1)?,
+                    ))
+                },
+            )
+            .expect("read cleared item");
+        assert_eq!(cleared.0, None);
+        assert_eq!(cleared.1, None);
+
+        remove_test_database(&path);
+    }
+
+    #[test]
+    fn item_edits_reject_unknown_status_and_category() {
+        let (connection, path) = test_connection("item-invalid");
+        insert_item(&connection, "item-invalid");
+
+        let bad_status = update_item(
+            &connection,
+            "item-invalid",
+            &LibraryItemPatch {
+                status: Some("lost".to_string()),
+                ..Default::default()
+            },
+        );
+        assert!(bad_status.is_err());
+
+        let bad_category = update_item(
+            &connection,
+            "item-invalid",
+            &LibraryItemPatch {
+                category_id: Some("cat-missing".to_string()),
+                ..Default::default()
+            },
+        );
+        assert!(bad_category.is_err());
+
+        let missing_item = update_item(
+            &connection,
+            "item-missing",
+            &LibraryItemPatch {
+                notes: Some("nope".to_string()),
+                ..Default::default()
+            },
+        );
+        assert!(missing_item.is_err());
+
+        remove_test_database(&path);
+    }
+
+    /// A rebuild wipes and reimports the index. Manual edits must be captured
+    /// before the wipe and restored by item id; the scanner must not win.
+    #[cfg(windows)]
+    #[test]
+    fn rebuild_restores_manual_library_edits() {
+        let (mut connection, path) = test_connection("rebuild-edit");
+        let root = "D:\\Axiom Test Library".to_string();
+        let plan = ScanPlan {
+            roots: vec![PlannedRoot {
+                root: ScanRoot {
+                    id: "root-test".to_string(),
+                    path: root.clone(),
+                    volume_id: None,
+                    kind: "movies".to_string(),
+                    category_id: None,
+                    depth: 0,
+                    last_scan_at: None,
+                    created_at: "2026-01-01 00:00:00".to_string(),
+                },
+                config: ScanConfig {
+                    path: PathBuf::from(&root),
+                    kind: "movies".to_string(),
+                    category: None,
+                    depth: 0,
+                },
+                category_key: None,
+            }],
+            groups: vec![ScanGroup {
+                key: "movies/Test Film".to_string(),
+                kind: "movies".to_string(),
+                category: Some("english".to_string()),
+                title: "Test Film".to_string(),
+                year: Some(2019),
+                folder_path: Some(format!("{root}\\Test Film")),
+                primary_path: format!("{root}\\Test Film\\Test Film.mp4"),
+                volume_root: root.clone(),
+                total_size_bytes: 1024,
+                copy_count: 1,
+                episode_count: 0,
+                season_count: 0,
+                seasons: Vec::new(),
+                confidence: 0.9,
+                reason: "test".to_string(),
+                files: vec![ScanFile {
+                    rel_path: "Test Film/Test Film.mp4".to_string(),
+                    size_bytes: 1024,
+                    season_number: 0,
+                    season_label: None,
+                    episode: None,
+                    quality: Some("1080p".to_string()),
+                }],
+            }],
+            warnings: Vec::new(),
+        };
+
+        write_plan(&mut connection, &plan).expect("first import");
+        let item_id: String = connection
+            .query_row("SELECT id FROM media_items", [], |row| row.get(0))
+            .expect("imported item");
+
+        update_item(
+            &connection,
+            &item_id,
+            &LibraryItemPatch {
+                status: Some("completed".to_string()),
+                rating: Some(9.0),
+                notes: Some("keep me".to_string()),
+                category_id: Some("arabic".to_string()),
+                title: Some("Edited Title".to_string()),
+                original_title: Some("Original Title".to_string()),
+                year: Some(2020),
+                ..Default::default()
+            },
+        )
+        .expect("edit item");
+
+        write_plan(&mut connection, &plan).expect("rebuild");
+
+        let restored = connection
+            .query_row(
+                "SELECT title, sort_title, year, status, rating, notes,
+                        original_title, category_id
+                 FROM media_items WHERE id = ?1",
+                params![item_id],
+                |row| {
+                    Ok((
+                        row.get::<_, String>(0)?,
+                        row.get::<_, Option<String>>(1)?,
+                        row.get::<_, Option<i64>>(2)?,
+                        row.get::<_, String>(3)?,
+                        row.get::<_, Option<f64>>(4)?,
+                        row.get::<_, String>(5)?,
+                        row.get::<_, Option<String>>(6)?,
+                        row.get::<_, Option<String>>(7)?,
+                    ))
+                },
+            )
+            .expect("item after rebuild");
+        assert_eq!(restored.0, "Edited Title");
+        assert_eq!(restored.1.as_deref(), Some("edited title"));
+        assert_eq!(restored.2, Some(2020));
+        assert_eq!(restored.3, "completed");
+        assert_eq!(restored.4, Some(9.0));
+        assert_eq!(restored.5, "keep me");
+        assert_eq!(restored.6.as_deref(), Some("Original Title"));
+        assert_eq!(restored.7.as_deref(), Some("cat-arabic"));
+
+        remove_test_database(&path);
     }
 }

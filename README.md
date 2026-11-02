@@ -88,19 +88,22 @@ they are not committed to the repository.
 
 | Platform | Download |
 | --- | --- |
-| Windows x64 | NSIS `.exe` — per-user, no admin prompt |
+| Windows x64 | NSIS `.exe` — per-user, no admin prompt; MSI for a machine-wide/admin install |
 | Linux x64 | `.deb` or AppImage |
 | macOS (Apple Silicon / Intel) | `.dmg` |
 
-- **Unsigned builds** — Windows SmartScreen may ask for *More info → Run anyway*; macOS Gatekeeper
-  may require right-click → **Open**.
+- **Signed when the release secrets are set** — the publisher name appears in the SmartScreen
+  prompt. Unsigned local builds may ask for *More info → Run anyway*; macOS Gatekeeper may require
+  right-click → **Open**.
+- **Updates install in place** from **Settings → Updates**; no uninstall is needed and the database,
+  notes, posters and library index are preserved.
 - First launch copies the bundled workspace seed, so the Axiom Core project and docs are already
   there.
 - Data stays in the platform app-data folder (`%APPDATA%\com.axiom.core\axiom.db` on Windows);
   uninstalling does not delete it.
 - Tagged releases are built by CI for all three platforms. See
-  [installer.md](docs/features/installer.md) for the pipeline, local build commands and the test
-  checklist.
+  [installer.md](docs/features/installer.md) for signing, the update channel, local build commands
+  and the test checklist.
 
 ### Environment overrides
 

@@ -1,6 +1,6 @@
 [package]
 name = "axiom-core"
-version = "0.1.0"
+version = "0.2.0"
 description = "Axiom Core — personal workspace and media library"
 authors = ["Abdullah"]
 edition = "2021"
@@ -22,6 +22,8 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = ["tray-icon", "image-png", "protocol-asset"] }
 tauri-plugin-global-shortcut = "2"
 tauri-plugin-single-instance = "2"
+tauri-plugin-updater = "2"
+tauri-plugin-process = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 rusqlite = { version = "0.41.0", features = ["bundled"] }
@@ -29,4 +31,8 @@ rfd = "0.15"
 
 [profile.dev.package.libsqlite3-sys]
 # cl.exe chokes on /Z7 for the bundled SQLite C file in some environments.
+debug = false
+
+[profile.dev.package.ring]
+# Same MSVC /Z7 limitation when compiling ring's C sources for updater TLS.
 debug = false

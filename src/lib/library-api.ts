@@ -11,9 +11,11 @@
 import { invoke } from '@tauri-apps/api/core'
 
 import type {
+  CategoryInput,
   ImportSummary,
   LibraryCategoryCount,
   LibraryItemDetail,
+  LibraryItemPatch,
   LibraryOverview,
   LibraryPage,
   LibraryQuery,
@@ -56,6 +58,22 @@ export async function deleteScanRoot(id: string): Promise<void> {
   await invoke('delete_scan_root', { id })
 }
 
+/** Create a category, or update the one matching `input.id`. */
+export async function saveCategory(input: CategoryInput): Promise<MediaCategory> {
+  return invoke<MediaCategory>('library_save_category', { input })
+}
+
+export async function deleteCategory(id: string): Promise<void> {
+  if (!isTauri()) return
+  await invoke('library_delete_category', { id })
+}
+
+/** Persist the category order shown in the manager, first id first. */
+export async function reorderCategories(ids: string[]): Promise<void> {
+  if (!isTauri()) return
+  await invoke('library_reorder_categories', { ids })
+}
+
 //=====> Browse <=====//
 
 export async function loadLibraryOverview(): Promise<LibraryOverview | null> {
@@ -91,6 +109,12 @@ export async function loadRecentRuns(): Promise<ScanRunSummary[]> {
 export async function setLibraryCover(id: string, path: string | null): Promise<void> {
   if (!isTauri()) return
   await invoke('library_set_cover', { id, path })
+}
+
+/** Edit status, rating, notes, category or title on one Library item. */
+export async function updateLibraryItem(id: string, patch: LibraryItemPatch): Promise<void> {
+  if (!isTauri()) return
+  await invoke('library_update_item', { id, patch })
 }
 
 //=====> Rebuild <=====//
