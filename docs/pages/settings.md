@@ -34,7 +34,9 @@ A decorative layer is blended into the current theme canvas:
 | Style | None · Grid · Dots · Glow · Image |
 | Scope | Whole window · Page content |
 | Opacity | 0 – 40 %, in 2 % steps |
-| Image URL | shown only for the Image style; blended with `soft-light` |`n| Choose image | local file, resized to 1600 px JPEG and stored locally |`n| Apply to | Everywhere or the current page |
+| Image URL | shown only for the Image style; blended with `soft-light` |
+| Choose image | local file, resized to 1600 px JPEG and stored locally |
+| Apply to | Everywhere or the current page |
 
 - Patterns use `color-mix` against the theme's foreground colour, so they adapt to every theme.
 - The layer is `pointer-events: none`, sits behind the UI, and never covers content.
@@ -46,6 +48,18 @@ A decorative layer is blended into the current theme canvas:
 App name, workspace name and owner name, with a live subtitle in the card. Empty fields fall back
 to the defaults in `src/lib/identity.ts`. Saving updates the whole shell and the native window
 title. See [personalization.md](../features/personalization.md).
+
+## Local API
+
+The **Local API** card shows whether the loopback server is running, the port (`47615` by
+default), the bearer token and an enable toggle. Saving a port or token change requires an app
+restart; the card reports bind conflicts here. See [LOCAL-API.md](../resources/LOCAL-API.md).
+
+## Backup & restore
+
+**Export backup** writes a folder containing `axiom.db`, `covers/` and `attachments/`. **Import
+backup** validates and stages a folder, then offers a restart; the current database is parked as a
+pre-import copy. Details: [backup.md](../features/backup.md).
 
 ## Local data
 

@@ -9,7 +9,17 @@
 //=====> Imports & Constants <=====//
 
 import { useEffect, useState, type FormEvent } from 'react'
-import { BookOpen, Check, Copy, Database, Download, RotateCcw, Settings2, Upload } from 'lucide-react'
+import {
+  BookOpen,
+  Check,
+  Copy,
+  Database,
+  Download,
+  RefreshCw,
+  RotateCcw,
+  Settings2,
+  Upload,
+} from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 
 import {
@@ -30,8 +40,17 @@ import { exportWorkspaceBackup, importWorkspaceBackup, restartApp } from '@/lib/
 import { DEFAULT_IDENTITY } from '@/lib/identity'
 import { getLocalApiStatus, saveLocalApiConfig, type LocalApiStatus } from '@/lib/local-api'
 import { useApp } from '@/lib/store'
+import { isTauri } from '@/lib/tauri'
 import { THEMES, themeMeta } from '@/lib/themes'
 import type { BackgroundKind, BackgroundScope, BackgroundSettings, Identity } from '@/lib/types'
+import {
+  checkForUpdate,
+  getAppVersion,
+  installAvailableUpdate,
+  relaunchApp,
+  type AvailableUpdate,
+  type UpdateProgress,
+} from '@/lib/updates'
 import { cn } from '@/lib/utils'
 
 
@@ -64,6 +83,11 @@ export default function UserPage() {
   const [backupBusy, setBackupBusy] = useState(false)
   const [backupNote, setBackupNote] = useState<string | null>(null)
   const [pendingRestart, setPendingRestart] = useState(false)
+  const [version, setVersion] = useState<string | null>(null)
+  const [update, setUpdate] = useState<AvailableUpdate | null>(null)
+  const [updateBusy, setUpdateBusy] = useState(false)
+  const [updateNote, setUpdateNote] = useState<string | null>(null)
+  const [updateProgress, setUpdateProgress] = useState<UpdateProgress | null>(null)
 
   //===> Define Profile Draft <===//
   const [draft, setDraft] = useState<Identity>(state.identity)
@@ -79,6 +103,9 @@ export default function UserPage() {
   useEffect(() => {
     setDraft(state.identity)
   }, [state.identity])
+  useEffect(() => {
+    void getAppVersion().then(setVersion)
+  }, [])
 
   //===> Derive Display Values <===//
   const location = useLocation()
@@ -91,6 +118,10 @@ export default function UserPage() {
     else updateBackground(patch)
   }
   const theme = themeMeta(state.theme)
+  const updatePercent =
+    updateProgress && updateProgress.total > 0
+      ? Math.min(100, Math.round((updateProgress.downloaded / updateProgress.total) * 100))
+      : null
 
   //===> Save Identity <===//
   function handleProfileSubmit(event: FormEvent<HTMLFormElement>) {
@@ -145,6 +176,41 @@ export default function UserPage() {
       setBackupBusy(false)
     }
   }
+  //===> Update Actions <===//
+  async function handleCheckUpdate() {
+    setUpdateBusy(true)
+    setUpdateNote(null)
+    setUpdate(null)
+    setUpdateProgress(null)
+    try {
+      const next = await checkForUpdate()
+      if (next) {
+        setUpdate(next)
+        setUpdateNote(`Version ${next.version} is available.`)
+      } else {
+        setUpdateNote('Axiom Core is up to date.')
+      }
+    } catch (error) {
+      setUpdateNote(error instanceof Error ? error.message : String(error))
+    } finally {
+      setUpdateBusy(false)
+    }
+  }
+
+  async function handleInstallUpdate() {
+    if (!update) return
+    setUpdateBusy(true)
+    setUpdateNote('Downloading and verifying the signed installer…')
+    try {
+      await installAvailableUpdate(setUpdateProgress)
+      setUpdateNote('Installed. Restarting Axiom Core to finish the update…')
+      await relaunchApp()
+    } catch (error) {
+      setUpdateNote(error instanceof Error ? error.message : String(error))
+      setUpdateBusy(false)
+    }
+  }
+
   //===> Local API Actions <===//
   async function handleSaveApi() {
     setApiBusy(true)
@@ -158,11 +224,7 @@ export default function UserPage() {
       setApi(status)
       setApiPort(String(status.port))
       setApiToken(status.token)
-      setApiNote(
-        status.restartRequired
-          ? 'Saved. Restart Axiom Core to bind the new port; the token works immediately after restart.'
-          : 'Saved. AI clients can use this endpoint now.',
-      )
+      setApiNote('Saved. Restart Axiom Core to apply port or token changes to the local server.')
     } catch (error) {
       setApiNote(error instanceof Error ? error.message : String(error))
     } finally {
@@ -536,6 +598,83 @@ export default function UserPage() {
           ) : null}
         </div>
       </Card>
+      {/*=====> Updates Section <=====*/}
+      <Card>
+        <CardHeader title="Updates" hint={version ? `v${version}` : 'desktop only'} />
+        <div className="space-y-3 px-4 pb-4">
+          <p className="text-[12px] leading-5 text-fg-muted">
+            Signed releases come from GitHub Releases and install over the current version. Notes,
+            ratings, posters and the library index stay in place; no uninstall step is involved.
+          </p>
+
+          {!isTauri() ? (
+            <p className="text-[11px] text-fg-subtle">
+              Updates are available in the installed desktop app.
+            </p>
+          ) : (
+            <>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => void handleCheckUpdate()}
+                  disabled={updateBusy}
+                >
+                  <RefreshCw className={cn('size-3.5', updateBusy && !update && 'animate-spin')} />
+                  {updateBusy && !update ? 'Checking…' : 'Check for updates'}
+                </Button>
+                {update ? (
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    onClick={() => void handleInstallUpdate()}
+                    disabled={updateBusy}
+                  >
+                    <Download className="size-3.5" />
+                    {updateBusy ? 'Installing…' : `Install ${update.version}`}
+                  </Button>
+                ) : null}
+              </div>
+
+              {update?.body ? (
+                <div className="rounded-control border border-line/60 bg-surface-2 px-3 py-2">
+                  <p className="text-[10px] font-medium tracking-[0.12em] text-fg-subtle uppercase">
+                    Release notes
+                  </p>
+                  <p className="mt-1 max-h-32 overflow-y-auto whitespace-pre-line text-[11.5px] leading-5 text-fg-muted">
+                    {update.body}
+                  </p>
+                </div>
+              ) : null}
+
+              {updateProgress ? (
+                <div className="space-y-1">
+                  <div className="h-1.5 overflow-hidden rounded-full bg-surface-2">
+                    <div
+                      className="h-full rounded-full bg-accent transition-[width]"
+                      style={{ width: `${updatePercent ?? 8}%` }}
+                    />
+                  </div>
+                  <p className="text-[10px] text-fg-subtle tabular-nums">
+                    {updatePercent === null
+                      ? 'Starting download…'
+                      : `${updatePercent}% downloaded`}
+                  </p>
+                </div>
+              ) : null}
+            </>
+          )}
+
+          {updateNote ? (
+            <p className="break-all text-[10.5px] leading-4 text-fg-subtle">{updateNote}</p>
+          ) : null}
+          <p className="text-[10px] leading-4 text-fg-subtle">
+            Every update is verified with the release signing key before it runs. If the automatic
+            install is blocked, download the MSI or setup from GitHub Releases.
+          </p>
+        </div>
+      </Card>
+
       {/*=====> Data Section <=====*/}
       <Card>
         <CardHeader title="Local data" hint="SQLite · WAL" />

@@ -4,15 +4,16 @@
 
 > **Direction update — 2026-10-25.** Axiom Core is now **desktop-first**: a Tauri shell around a pure
 > Rust core (`axiom-core`) with SQLite, so it can live in the tray and feel like part of the OS.
-> It also grows a **media Library** module (games, movies, series, anime and user-defined kinds)
-> whose first job is answering *"do I already have this?"*. See [LIBRARY.md](LIBRARY.md) for the
-> module design and the current delivery order.
+> It also grows a **media Library** module (games, movies and series, with English/Arabic/Anime
+> categories and user-defined kinds) whose first job is answering *"do I already have this?"*. See
+> [LIBRARY.md](LIBRARY.md) for the module design and the current delivery order.
 >
 > The desktop shell spike (2026-10-25) is working: tray + global quick capture, windows destroyed on
 > close, ~26 MB resident with no window open.
 >
-> Workspace persistence moved to SQLite (`load_state` / `save_state`, WAL, schema v1); the
-> Library tables and six editable kinds exist before their UI does.
+> Workspace persistence moved to SQLite (`load_state` / `save_state`, WAL, schema v2); the Library
+> now ships a scanner that groups series into one entry, a Movies/Series category tree, paginated
+> reads and a rebuild flow with automatic backup.
 
 Axiom Core is a personal workspace for tasks, projects and notes. It should feel like Linear
 when you are executing and like Notion when you are thinking — fast, quiet, keyboard-first,

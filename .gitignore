@@ -10,6 +10,14 @@ dist/
 src-tauri/target/
 src-tauri/gen/
 
+# committed installers now live in GitHub Releases
+release/
+
+# local database backups and transient SQLite sidecars
+backups/
+*.db-shm
+*.db-wal
+
 # local tooling / preview artefacts
 .chrome-profile*/
 .webview2/

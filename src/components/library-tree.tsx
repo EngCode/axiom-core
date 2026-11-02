@@ -1,220 +1,146 @@
 /**======> Reference By Comment <======
- * ===> 01 - Types & Builder
- * ===> 02 - Library Tree
+ * ===> 01 - Types
+ * ===> 02 - Category Tree
  */
 
-//=====> Types & Builder <=====//
+//=====> Types <=====//
 
-import { useMemo, useState } from 'react'
-import { ChevronRight, Folder, HardDrive, Library } from 'lucide-react'
+import { useState } from 'react'
+import {
+  BookOpen,
+  ChevronRight,
+  Film,
+  Gamepad2,
+  HardDrive,
+  Library,
+  ListMusic,
+  Tv,
+} from 'lucide-react'
 
-import type { MediaCopy, Volume } from '@/lib/library-types'
+import type { LibraryCount, LibraryOverview } from '@/lib/library-types'
 import { cn } from '@/lib/utils'
 
-export interface LibraryFolderNode {
-  id: string
-  name: string
-  path: string
-  volumeId: string
-  count: number
-  children: LibraryFolderNode[]
+/** What the grid is currently scoped to. Keys, never ids, so links stay stable. */
+export interface LibrarySelection {
+  kind: string | null
+  category: string | null
 }
 
-function buildTree(volumes: Volume[], copies: MediaCopy[]): LibraryFolderNode[] {
-  const roots = new Map<string, LibraryFolderNode>()
+export const ALL_MEDIA: LibrarySelection = { kind: null, category: null }
 
-  for (const volume of volumes) {
-    roots.set(volume.id, {
-      id: `${volume.id}|`,
-      name: volume.label ?? volume.mountPath,
-      path: '',
-      volumeId: volume.id,
-      count: 0,
-      children: [],
-    })
-  }
-
-  for (const copy of copies) {
-    const root = roots.get(copy.volumeId)
-    if (!root) continue
-    root.count += 1
-
-    const parts = copy.relPath.replace(/\\/g, '/').split('/').filter(Boolean)
-    parts.pop()
-    let parent = root
-    let path = ''
-
-    for (const part of parts) {
-      path = path ? `${path}/${part}` : part
-      let child = parent.children.find((candidate) => candidate.path === path)
-      if (!child) {
-        child = {
-          id: `${copy.volumeId}|${path}`,
-          name: part,
-          path,
-          volumeId: copy.volumeId,
-          count: 0,
-          children: [],
-        }
-        parent.children.push(child)
-      }
-      child.count += 1
-      parent = child
-    }
-  }
-
-  const sort = (nodes: LibraryFolderNode[]) => {
-    nodes.sort((left, right) => left.name.localeCompare(right.name))
-    for (const node of nodes) sort(node.children)
-  }
-  const result = [...roots.values()]
-  sort(result)
-  return result
+const KIND_ICONS: Record<string, typeof Film> = {
+  movies: Film,
+  series: Tv,
+  games: Gamepad2,
+  books: BookOpen,
+  music: ListMusic,
 }
 
-//=====> Library Tree <=====//
+//=====> Category Tree <=====//
 
-export function LibraryTree({
-  volumes,
-  copies,
-  selectedKey,
+export function LibraryCategories({
+  overview,
+  selection,
   onSelect,
 }: {
-  volumes: Volume[]
-  copies: MediaCopy[]
-  selectedKey: string | null
-  onSelect: (key: string | null) => void
+  overview: LibraryOverview
+  selection: LibrarySelection
+  onSelect: (selection: LibrarySelection) => void
 }) {
-  const tree = useMemo(() => buildTree(volumes, copies), [volumes, copies])
+  // Movies and Series start open so the English/Arabic/Anime split is visible.
   const [expanded, setExpanded] = useState<Set<string>>(
-    () => new Set(tree.map((volume) => volume.id)),
+    () => new Set(['movies', 'series']),
   )
 
-  function toggle(id: string) {
+  function toggle(kind: string) {
     setExpanded((current) => {
       const next = new Set(current)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
+      if (next.has(kind)) next.delete(kind)
+      else next.add(kind)
       return next
     })
   }
 
-  //===> Render <===//
+  const categories = overview.categories.filter((category) => !category.hidden)
+  const kinds = overview.kinds.filter(
+    (kind) => kind.key !== 'anime' && (kind.count > 0 || kind.key === 'movies' || kind.key === 'series'),
+  )
+
   return (
     <div className="overflow-hidden rounded-card border border-line bg-surface">
       <div className="flex items-center gap-1.5 border-b border-line px-3 py-2">
         <Library className="size-3.5 text-fg-subtle" />
         <span className="text-[10px] font-medium tracking-[0.14em] text-fg-subtle uppercase">
-          Storage
+          Categories
         </span>
       </div>
 
-      <div className="max-h-[520px] overflow-y-auto p-1.5">
+      <div className="max-h-[560px] overflow-y-auto p-1.5">
         <button
           type="button"
-          onClick={() => onSelect(null)}
+          onClick={() => onSelect(ALL_MEDIA)}
           className={cn(
             'flex w-full items-center gap-1.5 rounded px-1.5 py-1 text-[11px] transition-colors',
-            selectedKey === null ? 'bg-surface-2 text-fg' : 'text-fg-muted hover:bg-surface-2/60',
+            selection.kind === null
+              ? 'bg-surface-2 text-fg'
+              : 'text-fg-muted hover:bg-surface-2/60',
           )}
         >
           <Library className="size-3 shrink-0" />
           All media
-          <span className="ms-auto text-[9.5px] text-fg-subtle tabular-nums">{copies.length}</span>
+          <span className="ms-auto text-[9.5px] text-fg-subtle tabular-nums">
+            {overview.totalItems}
+          </span>
         </button>
 
-        {tree.map((volume) => {
-          const open = expanded.has(volume.id)
-          return (
-            <div key={volume.id}>
-              <div
-                className={cn(
-                  'group flex items-center gap-1 rounded px-1.5 py-1 text-[11px] transition-colors',
-                  selectedKey === volume.id
-                    ? 'bg-surface-2 text-fg'
-                    : 'text-fg-muted hover:bg-surface-2/60',
-                )}
-              >
-                {volume.children.length > 0 ? (
-                  <button
-                    type="button"
-                    onClick={() => toggle(volume.id)}
-                    aria-label={open ? 'Collapse drive' : 'Expand drive'}
-                    className="grid size-4 shrink-0 place-items-center text-fg-subtle"
-                  >
-                    <ChevronRight
-                      className={cn('size-3 transition-transform', open && 'rotate-90')}
-                    />
-                  </button>
-                ) : (
-                  <span className="size-4 shrink-0" />
-                )}
-                <button
-                  type="button"
-                  onClick={() => onSelect(volume.id)}
-                  className="flex min-w-0 flex-1 items-center gap-1.5 text-start"
-                >
-                  <HardDrive className="size-3 shrink-0" />
-                  <span className="truncate">{volume.name}</span>
-                </button>
-                <span className="text-[9.5px] text-fg-subtle tabular-nums">{volume.count}</span>
-              </div>
-
-              {open
-                ? volume.children.map((folder) => (
-                    <TreeBranch
-                      key={folder.id}
-                      node={folder}
-                      depth={1}
-                      expanded={expanded}
-                      selectedKey={selectedKey}
-                      onSelect={onSelect}
-                      onToggle={toggle}
-                    />
-                  ))
-                : null}
-            </div>
-          )
-        })}
+        {kinds.map((kind) => (
+          <KindBranch
+            key={kind.key}
+            kind={kind}
+            categories={categories}
+            selection={selection}
+            open={expanded.has(kind.key)}
+            onToggle={() => toggle(kind.key)}
+            onSelect={onSelect}
+          />
+        ))}
       </div>
     </div>
   )
 }
 
-function TreeBranch({
-  node,
-  depth,
-  expanded,
-  selectedKey,
-  onSelect,
+function KindBranch({
+  kind,
+  categories,
+  selection,
+  open,
   onToggle,
+  onSelect,
 }: {
-  node: LibraryFolderNode
-  depth: number
-  expanded: Set<string>
-  selectedKey: string | null
-  onSelect: (key: string | null) => void
-  onToggle: (id: string) => void
+  kind: LibraryCount
+  categories: LibraryOverview['categories']
+  selection: LibrarySelection
+  open: boolean
+  onToggle: () => void
+  onSelect: (selection: LibrarySelection) => void
 }) {
-  const open = expanded.has(node.id)
-  const hasChildren = node.children.length > 0
+  const Icon = KIND_ICONS[kind.key] ?? HardDrive
+  const children = categories.filter((category) => category.appliesTo.includes(kind.key))
+  const kindActive = selection.kind === kind.key && selection.category === null
 
   return (
-    <>
+    <div>
       <div
         className={cn(
-          'group flex items-center gap-1 rounded px-1.5 py-1 text-[10.5px] transition-colors',
-          selectedKey === node.id
-            ? 'bg-surface-2 text-fg'
-            : 'text-fg-muted hover:bg-surface-2/60',
+          'group flex items-center gap-1 rounded px-1.5 py-1 text-[11px] transition-colors',
+          kindActive ? 'bg-surface-2 text-fg' : 'text-fg-muted hover:bg-surface-2/60',
         )}
-        style={{ paddingInlineStart: 6 + depth * 12 }}
       >
-        {hasChildren ? (
+        {children.length > 0 ? (
           <button
             type="button"
-            onClick={() => onToggle(node.id)}
-            aria-label={open ? 'Collapse folder' : 'Expand folder'}
+            onClick={onToggle}
+            aria-label={open ? `Collapse ${kind.name}` : `Expand ${kind.name}`}
             className="grid size-4 shrink-0 place-items-center text-fg-subtle"
           >
             <ChevronRight className={cn('size-3 transition-transform', open && 'rotate-90')} />
@@ -224,29 +150,37 @@ function TreeBranch({
         )}
         <button
           type="button"
-          onClick={() => onSelect(node.id)}
+          onClick={() => onSelect({ kind: kind.key, category: null })}
           className="flex min-w-0 flex-1 items-center gap-1.5 text-start"
-          title={node.path}
         >
-          <Folder className="size-3 shrink-0" />
-          <span className="truncate">{node.name}</span>
+          <Icon className="size-3 shrink-0" />
+          <span className="truncate">{kind.name}</span>
         </button>
-        <span className="text-[9px] text-fg-subtle tabular-nums">{node.count}</span>
+        <span className="text-[9.5px] text-fg-subtle tabular-nums">{kind.count}</span>
       </div>
 
       {open
-        ? node.children.map((child) => (
-            <TreeBranch
-              key={child.id}
-              node={child}
-              depth={depth + 1}
-              expanded={expanded}
-              selectedKey={selectedKey}
-              onSelect={onSelect}
-              onToggle={onToggle}
-            />
-          ))
+        ? children.map((category) => {
+            const active =
+              selection.kind === kind.key && selection.category === category.key
+            const count = category.byKind[kind.key] ?? 0
+            return (
+              <button
+                key={category.key}
+                type="button"
+                onClick={() => onSelect({ kind: kind.key, category: category.key })}
+                className={cn(
+                  'flex w-full items-center gap-1.5 rounded py-1 pe-1.5 ps-8 text-[10.5px] transition-colors',
+                  active ? 'bg-surface-2 text-fg' : 'text-fg-muted hover:bg-surface-2/60',
+                )}
+              >
+                <span className={cn('size-1.5 shrink-0 rounded-full', active ? 'bg-accent' : 'bg-line-strong')} />
+                <span className="truncate">{category.name}</span>
+                <span className="ms-auto text-[9px] text-fg-subtle tabular-nums">{count}</span>
+              </button>
+            )
+          })
         : null}
-    </>
+    </div>
   )
 }

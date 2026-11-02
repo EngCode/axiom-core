@@ -15,7 +15,7 @@ use super::models::{
     MediaProgress, Note, Project, Volume,
 };
 
-pub const SCHEMA_VERSION: i64 = 1;
+pub const SCHEMA_VERSION: i64 = 2;
 
 const SCHEMA: &str = r#"
 CREATE TABLE IF NOT EXISTS meta (
@@ -92,6 +92,16 @@ CREATE TABLE IF NOT EXISTS media_kinds (
     created_at    TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS media_categories (
+    id         TEXT PRIMARY KEY,
+    key        TEXT NOT NULL UNIQUE,
+    name       TEXT NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    hidden     INTEGER NOT NULL DEFAULT 0,
+    applies_to TEXT NOT NULL DEFAULT '["movies","series"]',
+    created_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS media_items (
     id                  TEXT PRIMARY KEY,
     kind_id             TEXT NOT NULL REFERENCES media_kinds(id),
@@ -106,11 +116,22 @@ CREATE TABLE IF NOT EXISTS media_items (
     cover_path          TEXT,
     provider_ids_json   TEXT NOT NULL DEFAULT '{}',
     created_at          TEXT NOT NULL,
-    updated_at          TEXT NOT NULL
+    updated_at          TEXT NOT NULL,
+    category_id         TEXT REFERENCES media_categories(id) ON DELETE SET NULL,
+    external_key        TEXT,
+    folder_path         TEXT,
+    primary_path        TEXT,
+    copy_count          INTEGER NOT NULL DEFAULT 0,
+    episode_count       INTEGER NOT NULL DEFAULT 0,
+    season_count        INTEGER NOT NULL DEFAULT 0,
+    total_size_bytes    INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS idx_media_items_kind   ON media_items(kind_id);
 CREATE INDEX IF NOT EXISTS idx_media_items_status ON media_items(status);
 CREATE INDEX IF NOT EXISTS idx_media_items_title  ON media_items(title);
+CREATE INDEX IF NOT EXISTS idx_media_items_browse ON media_items(kind_id, category_id, sort_title);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_media_items_key
+    ON media_items(kind_id, external_key) WHERE external_key IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS volumes (
     id             TEXT PRIMARY KEY,
@@ -121,6 +142,29 @@ CREATE TABLE IF NOT EXISTS volumes (
     mount_path     TEXT,
     type           TEXT NOT NULL DEFAULT 'external',
     last_seen_at   TEXT
+);
+
+CREATE TABLE IF NOT EXISTS scan_roots (
+    id           TEXT PRIMARY KEY,
+    path         TEXT NOT NULL UNIQUE,
+    volume_id    TEXT REFERENCES volumes(id) ON DELETE SET NULL,
+    kind         TEXT NOT NULL DEFAULT 'auto',
+    category_id  TEXT REFERENCES media_categories(id) ON DELETE SET NULL,
+    depth        INTEGER NOT NULL DEFAULT 0,
+    last_scan_at TEXT,
+    created_at   TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS scan_runs (
+    id          TEXT PRIMARY KEY,
+    started_at  TEXT NOT NULL,
+    finished_at TEXT,
+    kind        TEXT NOT NULL,
+    status      TEXT NOT NULL,
+    root_count  INTEGER NOT NULL DEFAULT 0,
+    item_count  INTEGER NOT NULL DEFAULT 0,
+    copy_count  INTEGER NOT NULL DEFAULT 0,
+    message     TEXT NOT NULL DEFAULT ''
 );
 
 CREATE TABLE IF NOT EXISTS media_copies (
@@ -135,6 +179,9 @@ CREATE TABLE IF NOT EXISTS media_copies (
     first_seen_at TEXT NOT NULL,
     last_seen_at  TEXT,
     missing_at    TEXT,
+    season_number INTEGER,
+    season_label  TEXT,
+    episode       INTEGER,
     UNIQUE(volume_id, rel_path)
 );
 CREATE INDEX IF NOT EXISTS idx_copies_item   ON media_copies(item_id);
@@ -165,10 +212,17 @@ CREATE TABLE IF NOT EXISTS media_tags (
 const KIND_SEEDS: &[(&str, &str, &str, &str, i64, &str, &str)] = &[
     ("movies", "Movies", "film", "blue", 0, "none", r#"[{"key":"resolution","label":"Resolution","type":"select","options":["480p","720p","1080p","2160p"]}]"#),
     ("series", "Series", "tv", "violet", 1, "episode", r#"[{"key":"sub_or_dub","label":"Sub or dub","type":"select","options":["Sub","Dub","Both"]}]"#),
-    ("anime", "Anime", "sparkles", "rose", 2, "episode", r#"[{"key":"sub_or_dub","label":"Sub or dub","type":"select","options":["Sub","Dub","Both"]},{"key":"season_count","label":"Seasons","type":"number"}]"#),
     ("games", "Games", "gamepad", "emerald", 3, "hour", r#"[{"key":"platform","label":"Platform","type":"select","options":["PC","PS5","Xbox","Switch"]},{"key":"playtime","label":"Playtime (h)","type":"number"}]"#),
     ("books", "Books", "book-open", "amber", 4, "page", r#"[{"key":"author","label":"Author","type":"text"},{"key":"pages","label":"Pages","type":"number"}]"#),
     ("music", "Music", "music", "cyan", 5, "none", r#"[{"key":"artist","label":"Artist","type":"text"}]"#),
+];
+
+/// Categories are rows, not an enum: adding Korean, Turkish or Documentary later
+/// is a single insert and needs no migration.
+const CATEGORY_SEEDS: &[(&str, &str, i64, &str)] = &[
+    ("english", "English", 0, r#"["movies","series"]"#),
+    ("arabic", "Arabic", 1, r#"["movies","series"]"#),
+    ("anime", "Anime", 2, r#"["movies","series"]"#),
 ];
 
 //=====> Migration & Seed <=====//
@@ -182,6 +236,9 @@ pub fn open(path: &Path) -> Result<Connection> {
     connection.pragma_update(None, "journal_mode", "WAL")?;
     connection.pragma_update(None, "synchronous", "NORMAL")?;
     connection.pragma_update(None, "foreign_keys", "ON")?;
+    // Imports are one big transaction. Keeping SQLite's scratch space in memory
+    // avoids SQLITE_CANTOPEN when the OS temp folder is locked down.
+    connection.pragma_update(None, "temp_store", "MEMORY")?;
     migrate(&connection)?;
     Ok(connection)
 }
@@ -191,7 +248,191 @@ fn migrate(connection: &Connection) -> Result<()> {
     if version < 1 {
         connection.execute_batch(SCHEMA)?;
         seed_media_kinds(connection)?;
-        connection.pragma_update(None, "user_version", 1)?;
+        seed_categories(connection)?;
+        connection.pragma_update(None, "user_version", SCHEMA_VERSION)?;
+        return Ok(());
+    }
+    if version < 2 {
+        migrate_v2(connection)?;
+        connection.pragma_update(None, "user_version", 2)?;
+    }
+    Ok(())
+}
+
+/// Schema v2 adds categories, scan roots, scan runs and the aggregate columns the
+/// paginated Library reads. Existing library rows are kept; the rebuild command
+/// is what replaces per-episode rows with one row per series.
+const SCHEMA_V2: &str = r#"
+CREATE TABLE IF NOT EXISTS media_categories (
+    id         TEXT PRIMARY KEY,
+    key        TEXT NOT NULL UNIQUE,
+    name       TEXT NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    hidden     INTEGER NOT NULL DEFAULT 0,
+    applies_to TEXT NOT NULL DEFAULT '["movies","series"]',
+    created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS scan_roots (
+    id           TEXT PRIMARY KEY,
+    path         TEXT NOT NULL UNIQUE,
+    volume_id    TEXT REFERENCES volumes(id) ON DELETE SET NULL,
+    kind         TEXT NOT NULL DEFAULT 'auto',
+    category_id  TEXT REFERENCES media_categories(id) ON DELETE SET NULL,
+    depth        INTEGER NOT NULL DEFAULT 0,
+    last_scan_at TEXT,
+    created_at   TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS scan_runs (
+    id          TEXT PRIMARY KEY,
+    started_at  TEXT NOT NULL,
+    finished_at TEXT,
+    kind        TEXT NOT NULL,
+    status      TEXT NOT NULL,
+    root_count  INTEGER NOT NULL DEFAULT 0,
+    item_count  INTEGER NOT NULL DEFAULT 0,
+    copy_count  INTEGER NOT NULL DEFAULT 0,
+    message     TEXT NOT NULL DEFAULT ''
+);
+"#;
+
+const SCHEMA_V2_INDEXES: &str = r#"
+CREATE INDEX IF NOT EXISTS idx_media_items_browse ON media_items(kind_id, category_id, sort_title);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_media_items_key
+    ON media_items(kind_id, external_key) WHERE external_key IS NOT NULL;
+"#;
+
+const MEDIA_ITEM_V2_COLUMNS: &[(&str, &str)] = &[
+    ("category_id", "TEXT REFERENCES media_categories(id) ON DELETE SET NULL"),
+    ("external_key", "TEXT"),
+    ("folder_path", "TEXT"),
+    ("primary_path", "TEXT"),
+    ("copy_count", "INTEGER NOT NULL DEFAULT 0"),
+    ("episode_count", "INTEGER NOT NULL DEFAULT 0"),
+    ("season_count", "INTEGER NOT NULL DEFAULT 0"),
+    ("total_size_bytes", "INTEGER NOT NULL DEFAULT 0"),
+];
+
+const MEDIA_COPY_V2_COLUMNS: &[(&str, &str)] = &[
+    ("season_number", "INTEGER"),
+    ("season_label", "TEXT"),
+    ("episode", "INTEGER"),
+];
+
+fn column_exists(connection: &Connection, table: &str, column: &str) -> Result<bool> {
+    let mut statement = connection.prepare(&format!("PRAGMA table_info({table})"))?;
+    let mut rows = statement.query([])?;
+    while let Some(row) = rows.next()? {
+        let name: String = row.get(1)?;
+        if name == column {
+            return Ok(true);
+        }
+    }
+    Ok(false)
+}
+
+fn migrate_v2(connection: &Connection) -> Result<()> {
+    connection.execute_batch(SCHEMA_V2)?;
+    for &(column, definition) in MEDIA_ITEM_V2_COLUMNS {
+        if !column_exists(connection, "media_items", column)? {
+            connection.execute_batch(&format!(
+                "ALTER TABLE media_items ADD COLUMN {column} {definition}"
+            ))?;
+        }
+    }
+    for &(column, definition) in MEDIA_COPY_V2_COLUMNS {
+        if !column_exists(connection, "media_copies", column)? {
+            connection.execute_batch(&format!(
+                "ALTER TABLE media_copies ADD COLUMN {column} {definition}"
+            ))?;
+        }
+    }
+
+    connection.execute_batch(SCHEMA_V2_INDEXES)?;
+
+    seed_categories(connection)?;
+
+    //===> Retire The Standalone Anime Kind <===//
+    // Anime is a category under Movies and Series now. Any legacy rows move to
+    // Series/Anime so nothing is orphaned.
+    connection.execute(
+        "UPDATE media_items SET kind_id = 'kind-series', category_id = 'cat-anime'
+         WHERE kind_id = 'kind-anime'",
+        [],
+    )?;
+    connection.execute(
+        "UPDATE media_kinds SET hidden = 1 WHERE key = 'anime'",
+        [],
+    )?;
+
+    seed_scan_roots_from_copies(connection)?;
+    Ok(())
+}
+
+fn seed_categories(connection: &Connection) -> Result<()> {
+    for &(key, name, order, applies_to) in CATEGORY_SEEDS {
+        connection.execute(
+            "INSERT OR IGNORE INTO media_categories
+                (id, key, name, sort_order, hidden, applies_to, created_at)
+             VALUES (?1, ?2, ?3, ?4, 0, ?5, datetime('now'))",
+            params![format!("cat-{key}"), key, name, order, applies_to],
+        )?;
+    }
+    Ok(())
+}
+
+/// Best-effort adoption of the folders the pre-v2 scanner already indexed, so the
+/// rebuild button has roots without asking the user to re-add them by hand.
+fn seed_scan_roots_from_copies(connection: &Connection) -> Result<()> {
+    let existing: i64 =
+        connection.query_row("SELECT COUNT(*) FROM scan_roots", [], |row| row.get(0))?;
+    if existing > 0 {
+        return Ok(());
+    }
+
+    let mut statement = connection.prepare(
+        "SELECT c.volume_id, v.mount_path, v.label, v.type,
+                substr(c.rel_path, 1, instr(c.rel_path, '/') - 1) AS top
+         FROM media_copies c
+         JOIN volumes v ON v.id = c.volume_id
+         WHERE instr(c.rel_path, '/') > 0
+         GROUP BY c.volume_id, top",
+    )?;
+    let rows = statement
+        .query_map([], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, Option<String>>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, String>(3)?,
+                row.get::<_, String>(4)?,
+            ))
+        })?
+        .collect::<Result<Vec<_>>>()?;
+
+    for (volume_id, mount_path, label, volume_type, top) in rows {
+        let Some(mount) = mount_path.filter(|value| !value.is_empty()) else {
+            continue;
+        };
+        let base = std::path::Path::new(&mount)
+            .join(&top)
+            .to_string_lossy()
+            .into_owned();
+        let lower = top.to_ascii_lowercase();
+        let (kind, category) = if lower.contains("anim") {
+            ("series", Some("cat-anime"))
+        } else if lower.contains("series") || lower.contains("shows") {
+            ("series", None)
+        } else {
+            ("movies", None)
+        };
+        let root_id = format!("root-{}", crate::library_scan::stable_id(&base));
+        let _ = connection.execute(
+            "INSERT OR IGNORE INTO scan_roots
+                (id, path, volume_id, kind, category_id, depth, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, 0, datetime('now'))",
+            params![root_id, base, volume_id, kind, category],
+        );
+        let _ = (label, volume_type);
     }
     Ok(())
 }
@@ -572,7 +813,9 @@ pub fn load_library(connection: &Connection) -> Result<LibrarySnapshot> {
 
     let mut item_stmt = connection.prepare(
         "SELECT id, kind_id, title, sort_title, original_title, year, status, rating, notes,
-                attributes_json, cover_path, provider_ids_json, created_at, updated_at
+                attributes_json, cover_path, provider_ids_json, created_at, updated_at,
+                category_id, external_key, folder_path, primary_path,
+                copy_count, episode_count, season_count, total_size_bytes
          FROM media_items ORDER BY updated_at DESC, title",
     )?;
     let items = item_stmt
@@ -594,6 +837,14 @@ pub fn load_library(connection: &Connection) -> Result<LibrarySnapshot> {
                 provider_ids: json_value(providers),
                 created_at: row.get(12)?,
                 updated_at: row.get(13)?,
+                category_id: row.get(14)?,
+                external_key: row.get(15)?,
+                folder_path: row.get(16)?,
+                primary_path: row.get(17)?,
+                copy_count: row.get(18)?,
+                episode_count: row.get(19)?,
+                season_count: row.get(20)?,
+                total_size_bytes: row.get(21)?,
             })
         })?
         .collect::<Result<Vec<_>>>()?;
@@ -697,8 +948,11 @@ pub fn upsert_media_item(connection: &Connection, item: &MediaItem) -> Result<()
     connection.execute(
         "INSERT INTO media_items
             (id, kind_id, title, sort_title, original_title, year, status, rating, notes,
-             attributes_json, cover_path, provider_ids_json, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)
+             attributes_json, cover_path, provider_ids_json, created_at, updated_at,
+             category_id, external_key, folder_path, primary_path,
+             copy_count, episode_count, season_count, total_size_bytes)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14,
+                 ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22)
          ON CONFLICT(id) DO UPDATE SET
             kind_id = excluded.kind_id,
             title = excluded.title,
@@ -711,7 +965,15 @@ pub fn upsert_media_item(connection: &Connection, item: &MediaItem) -> Result<()
             attributes_json = excluded.attributes_json,
             cover_path = excluded.cover_path,
             provider_ids_json = excluded.provider_ids_json,
-            updated_at = excluded.updated_at",
+            updated_at = excluded.updated_at,
+            category_id = excluded.category_id,
+            external_key = excluded.external_key,
+            folder_path = excluded.folder_path,
+            primary_path = excluded.primary_path,
+            copy_count = excluded.copy_count,
+            episode_count = excluded.episode_count,
+            season_count = excluded.season_count,
+            total_size_bytes = excluded.total_size_bytes",
         params![
             item.id,
             item.kind_id,
@@ -726,7 +988,15 @@ pub fn upsert_media_item(connection: &Connection, item: &MediaItem) -> Result<()
             item.cover_path,
             providers,
             item.created_at,
-            item.updated_at
+            item.updated_at,
+            item.category_id,
+            item.external_key,
+            item.folder_path,
+            item.primary_path,
+            item.copy_count,
+            item.episode_count,
+            item.season_count,
+            item.total_size_bytes
         ],
     )?;
     Ok(())

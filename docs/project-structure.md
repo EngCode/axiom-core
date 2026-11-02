@@ -24,7 +24,7 @@ axiom-core/
 │   │   ├── notes.tsx          /notes
 │   │   ├── quick-capture.tsx  desktop capture window
 │   │   ├── documents.tsx      /documents (planned feature shell)
-│   │   ├── library.tsx        /library (data-layer status surface)
+│   │   ├── library.tsx        /library (category tree, paginated grid, rebuild)
 │   │   ├── tools.tsx          /tools (docs, identity, appearance, data)
 │   │   ├── user.tsx           /user (profile, appearance, help, data)
 │   │   ├── tools.tsx          /tools image utilities
@@ -44,7 +44,7 @@ axiom-core/
 │   │   ├── delete-project-dialog.tsx  inbox / move / cascade choices
 │   │   ├── folder-tree.tsx    nested folders for notes and documents
 │   │   ├── document-explorer.tsx page tree with folders
-│   │   ├── library-tree.tsx   volume/folder tree for the Library
+│   │   ├── library-tree.tsx   Movies/Series → category tree for the Library
 │   │   ├── drag-overlay.tsx    floating drag label
 │   │   ├── app-background.tsx  theme-aware background layer
 │   │   └── command-palette.tsx  ⌘K palette
@@ -63,15 +63,15 @@ axiom-core/
 │       ├── tools.ts          tool registry and categories
 │       ├── rich-text.tsx     shared rich editor and sanitizer
 │       ├── attachments.ts    native attachment bridge
-│       ├── library-scan.ts   typed scan client
+│       ├── library-scan.ts   native folder picker for scan roots
 │       ├── use-pointer-sort.ts pointer-driven sorting (no HTML5 drag)
 │       ├── core-api.ts       typed client for the Rust core API
 │       ├── appearance.ts      background defaults and normalization
 │       ├── identity.ts        defaults for name/workspace/owner
 │       ├── window.ts          native window title bridge
 │       ├── db.ts              Tauri ↔ SQLite bridge for the workspace
-│       ├── library-types.ts   media entity types
-│       ├── library-api.ts     media commands bridge
+│       ├── library-types.ts   library v2 models
+│       ├── library-api.ts     library commands bridge
 │       └── tauri.ts           `isTauri()` environment check
 │
 ├── src-tauri/                 the desktop shell and Rust core
@@ -82,8 +82,13 @@ axiom-core/
 │   └── src/
 │       ├── main.rs            Windows entry point
 │       ├── lib.rs             tray, hotkey, windows, commands, lifecycle
+│       ├── library_scan.rs    walker, grouping, season/title parsing, stable ids
+│       ├── library_db.rs      category/root CRUD, rebuild, paginated query, item detail
+│       ├── http_api.rs        loopback read/write API
+│       ├── attachments.rs     attachment storage, covers, cross-platform file open
 │       └── data/
-│           ├── api.rs         core issue mutations (load → validate → save)`n│           ├── models.rs      serde models shared with the frontend
+│           ├── api.rs         core issue mutations (load → validate → save)
+│           ├── models.rs      serde models shared with the frontend
 │           └── db.rs          schema, migrations, queries, writes
 │
 ├── docs/                      documentation (this folder)
