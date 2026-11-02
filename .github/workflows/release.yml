@@ -38,21 +38,42 @@ jobs:
       # Updater signatures (minisign). Generate with `pnpm tauri signer generate`.
       TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
       TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-      # Windows Authenticode (base64 PFX). Leave empty to ship an unsigned smoke build.
-      AXIOM_WINDOWS_CERTIFICATE: ${{ secrets.AXIOM_WINDOWS_CERTIFICATE }}
-      AXIOM_WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.AXIOM_WINDOWS_CERTIFICATE_PASSWORD }}
       AXIOM_WINDOWS_TIMESTAMP_URL: ${{ vars.AXIOM_WINDOWS_TIMESTAMP_URL }}
-      # macOS Developer ID certificate and notarization.
-      APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-      APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-      APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-      APPLE_ID: ${{ secrets.APPLE_ID }}
-      APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Configure signing credentials
+        shell: bash
+        env:
+          WINDOWS_CERTIFICATE: ${{ secrets.AXIOM_WINDOWS_CERTIFICATE }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.AXIOM_WINDOWS_CERTIFICATE_PASSWORD }}
+          MACOS_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          MACOS_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          # A missing secret still reaches the runner as an empty variable, and
+          # Tauri treats a present APPLE_CERTIFICATE as a PKCS#12 to import, so
+          # only export credentials that actually have a value.
+          set -euo pipefail
+          add_if_set() {
+            local name="$1" value="${2:-}"
+            if [ -n "$value" ]; then
+              printf '%s=%s\n' "$name" "$value" >> "$GITHUB_ENV"
+            fi
+          }
+          add_if_set AXIOM_WINDOWS_CERTIFICATE "$WINDOWS_CERTIFICATE"
+          add_if_set AXIOM_WINDOWS_CERTIFICATE_PASSWORD "$WINDOWS_CERTIFICATE_PASSWORD"
+          add_if_set APPLE_CERTIFICATE "$MACOS_CERTIFICATE"
+          add_if_set APPLE_CERTIFICATE_PASSWORD "$MACOS_CERTIFICATE_PASSWORD"
+          add_if_set APPLE_SIGNING_IDENTITY "$MACOS_SIGNING_IDENTITY"
+          add_if_set APPLE_ID "$APPLE_ID"
+          add_if_set APPLE_PASSWORD "$APPLE_PASSWORD"
+          add_if_set APPLE_TEAM_ID "$APPLE_TEAM_ID"
 
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
