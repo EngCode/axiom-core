@@ -5,9 +5,9 @@
 
 //=====> Types <=====//
 
-import { Droplets, Palette, Scaling, SwatchBook, type LucideIcon } from 'lucide-react'
+import { Contrast, Droplets, Palette, Scaling, SwatchBook, type LucideIcon } from 'lucide-react'
 
-export type ToolId = 'resize' | 'convert' | 'tint' | 'palette'
+export type ToolId = 'resize' | 'convert' | 'tint' | 'palette' | 'contrast'
 
 export type ToolCategoryId = 'image' | 'color'
 
@@ -60,7 +60,20 @@ export const TOOLS: ToolDefinition[] = [
     keywords: 'colours swatches hex extract picker',
     icon: Palette,
   },
+  {
+    id: 'contrast',
+    name: 'Contrast',
+    description: 'Check two colours against WCAG AA and AAA and preview real text.',
+    category: 'color',
+    keywords: 'wcag accessibility ratio aa aaa foreground background readable',
+    icon: Contrast,
+  },
 ]
+
+/** Contrast is a pure colour tool: it never opens the image canvas. */
+export function toolRequiresImage(id: ToolId): boolean {
+  return id !== 'contrast'
+}
 
 export function toolById(id: string | undefined): ToolDefinition | undefined {
   return TOOLS.find((tool) => tool.id === id)

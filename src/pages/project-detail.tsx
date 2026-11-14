@@ -18,6 +18,7 @@ import {
   FileText,
   Flag,
   ListTodo,
+  Pencil,
   Plus,
   Trash2,
   X,
@@ -28,6 +29,7 @@ import { useState, type FormEvent } from 'react'
 import { DocumentList } from '@/components/document-list'
 import { IssueList } from '@/components/issue-list'
 import { IssueRow } from '@/components/issue-row'
+import { ProjectDialog } from '@/components/project-dialog'
 import {
   Button,
   Card,
@@ -491,6 +493,7 @@ export default function ProjectDetailPage() {
   const { state, updateProject } = useApp()
   const { openIssueDialog } = useUI()
   const [searchParams] = useSearchParams()
+  const [editing, setEditing] = useState(false)
 
   //===> Resolve Project <===//
   const project = state.projects.find((candidate) => candidate.id === projectId)
@@ -538,6 +541,10 @@ export default function ProjectDetailPage() {
         description={isHtml(project.description) ? undefined : project.description || 'No description yet.'}
         actions={
           <>
+            <Button variant="secondary" onClick={() => setEditing(true)}>
+              <Pencil className="size-3.5" />
+              Edit
+            </Button>
             <Button
               variant="secondary"
               onClick={() =>
@@ -570,6 +577,8 @@ export default function ProjectDetailPage() {
       {tab === 'issues' ? <IssuesTab projectId={project.id} /> : null}
       {tab === 'milestones' ? <MilestonesTab projectId={project.id} /> : null}
       {tab === 'documents' ? <DocumentsTab projectId={project.id} /> : null}
+
+      <ProjectDialog open={editing} project={project} onClose={() => setEditing(false)} />
     </div>
   )
 }
