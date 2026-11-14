@@ -140,8 +140,9 @@ jobs:
             - **Linux:** the `.deb`.
             - **macOS:** the `.dmg`.
 
-            Installed copies on Windows and macOS update in place from
-            **Settings → Updates**; no uninstall is required. If the NSIS setup reports
+            Installed copies update in place from **Settings → Updates**; no uninstall is
+            required. Linux applies the `.deb` update with `dpkg`, so it asks for elevation.
+            If the NSIS setup reports
             "Error writing temporary file", run `scripts/installer-doctor.ps1` or use the MSI.
           releaseDraft: true
           prerelease: false

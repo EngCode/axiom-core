@@ -84,9 +84,9 @@ pnpm tauri signer generate -w .axiom-data/updater/axiom-core.key
 - Windows uses `installMode: "passive"`: the signed NSIS setup runs over the current installation
   and Axiom Core relaunches afterwards. **No uninstall step is required**, and the database,
   WebView profile, posters and library index stay where they are.
-- Windows and macOS replace the installed app in place.
-- Linux ships a `.deb` only. Tauri's updater installs AppImage bundles on Linux, so in-app
-  updates are not available there; install each new `.deb` with your package manager.
+- Windows, Linux and macOS replace the installed app in place.
+- Linux ships a `.deb` only. The updater writes the package to a temporary directory and installs
+  it with `dpkg`, so the system asks for elevation before the update is applied.
 
 The UI lives in **Settings → Updates**: it shows the installed version, checks the endpoint,
 prints the release notes and installs with a progress bar.
