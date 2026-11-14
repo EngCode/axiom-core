@@ -30,6 +30,7 @@ export interface ProjectActions {
   open: (project: Project) => void
   openIssues: (project: Project) => void
   newIssue: (project: Project) => void
+  edit: (project: Project) => void
   archive: (project: Project) => void
   restore: (project: Project) => void
   remove: (project: Project) => void
@@ -68,6 +69,12 @@ export function projectMenu(project: Project, actions: ProjectActions): MenuActi
       icon: Plus,
       divider: true,
       run: () => actions.newIssue(project),
+    },
+    {
+      id: 'edit-project',
+      label: 'Edit project',
+      icon: Pencil,
+      run: () => actions.edit(project),
     },
     archived
       ? {

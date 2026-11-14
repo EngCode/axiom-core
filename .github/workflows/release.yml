@@ -26,7 +26,7 @@ jobs:
             args: --bundles nsis,msi
           - label: Linux x64
             platform: ubuntu-22.04
-            args: --bundles deb,appimage
+            args: --bundles deb
           - label: macOS Apple Silicon
             platform: macos-14
             args: --bundles dmg,app
@@ -137,11 +137,12 @@ jobs:
             - **Windows:** use `Axiom Core_<version>_x64-setup.exe` for a per-user install with no
               admin prompt, or `Axiom Core_<version>_x64_en-US.msi` for a machine-wide install
               (requires elevation).
-            - **Linux:** the `.deb` or the `.AppImage`.
+            - **Linux:** the `.deb`.
             - **macOS:** the `.dmg`.
 
-            Installed copies of Axiom Core 0.2.0 or newer update in place from
-            **Settings → Updates**; no uninstall is required. If the NSIS setup reports
+            Installed copies update in place from **Settings → Updates**; no uninstall is
+            required. Linux applies the `.deb` update with `dpkg`, so it asks for elevation.
+            If the NSIS setup reports
             "Error writing temporary file", run `scripts/installer-doctor.ps1` or use the MSI.
           releaseDraft: true
           prerelease: false
@@ -165,3 +166,31 @@ jobs:
             src-tauri/target/release/bundle/**
             src-tauri/target/release/latest.json
           if-no-files-found: warn
+
+  cleanup:
+    name: Clean release assets
+    # Run even when one platform fails so the assets that did upload stay clean.
+    if: ${{ always() && startsWith(github.ref, 'refs/tags/') }}
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete .sig and AppImage assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          # The updater reads minisign signatures from latest.json, so the
+          # separate .sig sidecars are redundant. AppImage is no longer built.
+          assets=$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" \
+            --json assets --jq '.assets[].name | select(test("\\.sig$|\\.AppImage$"))') || {
+            echo "No release exists for $TAG; nothing to clean."
+            exit 0
+          }
+          if [ -z "$assets" ]; then
+            echo "No .sig or AppImage assets to remove."
+            exit 0
+          fi
+          while IFS= read -r asset; do
+            echo "Deleting $asset"
+            gh release delete-asset "$TAG" "$asset" --repo "$GITHUB_REPOSITORY" --yes
+          done <<< "$assets"

@@ -89,14 +89,15 @@ they are not committed to the repository.
 | Platform | Download |
 | --- | --- |
 | Windows x64 | NSIS `.exe` — per-user, no admin prompt; MSI for a machine-wide/admin install |
-| Linux x64 | `.deb` or AppImage |
+| Linux x64 | `.deb` |
 | macOS (Apple Silicon / Intel) | `.dmg` |
 
 - **Signed when the release secrets are set** — the publisher name appears in the SmartScreen
   prompt. Unsigned local builds may ask for *More info → Run anyway*; macOS Gatekeeper may require
   right-click → **Open**.
-- **Updates install in place** from **Settings → Updates**; no uninstall is needed and the database,
-  notes, posters and library index are preserved.
+- **Updates install in place** from **Settings → Updates**; no uninstall is needed and the
+  database, notes, posters and library index are preserved. Linux ships a `.deb` only, and its
+  update asks for elevation before installing the package.
 - First launch copies the bundled workspace seed, so the Axiom Core project and docs are already
   there.
 - Data stays in the platform app-data folder (`%APPDATA%\com.axiom.core\axiom.db` on Windows);

@@ -5,9 +5,26 @@
  */
 
 import { useState, type FormEvent } from 'react'
-import { CheckSquare, ExternalLink, ListTree, Paperclip, Plus, Trash2, X } from 'lucide-react'
+import {
+  AppWindow,
+  CheckSquare,
+  ExternalLink,
+  FolderOpen,
+  ListTree,
+  Paperclip,
+  Plus,
+  Trash2,
+  X,
+} from 'lucide-react'
 
-import { deleteAttachmentFile, openAttachment, pickAttachment } from '@/lib/attachments'
+import { AttachmentThumb } from '@/components/attachment-thumb'
+import {
+  deleteAttachmentFile,
+  openAttachment,
+  openAttachmentWith,
+  pickAttachment,
+  revealAttachment,
+} from '@/lib/attachments'
 import { useApp } from '@/lib/store'
 import type { Issue, Priority, Status } from '@/lib/types'
 import { RichTextEditor } from '@/lib/rich-text'
@@ -236,12 +253,24 @@ function IssueExtrasPanel({ issue }: { issue: Issue }) {
             Attach
           </Button>
         </div>
-        <div className="mt-2 space-y-1">
+        <div className="mt-2 space-y-1.5">
           {extras.attachments.length === 0 ? (
             <p className="text-[10.5px] text-fg-subtle">No files attached.</p>
           ) : (
             extras.attachments.map((file) => (
-              <div key={file.id} className="group flex items-center gap-2 text-[11px]">
+              <div
+                key={file.id}
+                className="group flex items-center gap-2.5 rounded-control border border-line/70 bg-surface-2/40 p-1.5 text-[11px]"
+              >
+                <button
+                  type="button"
+                  onClick={() => void openAttachment(file.path)}
+                  aria-label={`Open ${file.name}`}
+                  title={`Open ${file.name}`}
+                  className="shrink-0 rounded-control transition-opacity hover:opacity-80"
+                >
+                  <AttachmentThumb name={file.name} path={file.path} />
+                </button>
                 <button
                   type="button"
                   onClick={() => void openAttachment(file.path)}
@@ -251,14 +280,35 @@ function IssueExtrasPanel({ issue }: { issue: Issue }) {
                   {file.name}
                 </button>
                 <span className="shrink-0 text-[10px] text-fg-subtle">{formatBytes(file.size)}</span>
-                <button
-                  type="button"
-                  aria-label={`Remove ${file.name}`}
-                  onClick={() => void removeFile(file.id, file.path, file.name)}
-                  className="text-fg-subtle opacity-0 transition-opacity hover:text-danger group-hover:opacity-100"
-                >
-                  <X className="size-3" />
-                </button>
+                <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+                  <button
+                    type="button"
+                    aria-label={`Open ${file.name} with another app`}
+                    title="Open with…"
+                    onClick={() => void openAttachmentWith(file.path)}
+                    className="grid size-6 place-items-center rounded text-fg-subtle transition-colors hover:bg-surface-3 hover:text-fg"
+                  >
+                    <AppWindow className="size-3" />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`Show ${file.name} in its folder`}
+                    title="Show in folder"
+                    onClick={() => void revealAttachment(file.path)}
+                    className="grid size-6 place-items-center rounded text-fg-subtle transition-colors hover:bg-surface-3 hover:text-fg"
+                  >
+                    <FolderOpen className="size-3" />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`Remove ${file.name}`}
+                    title="Remove attachment"
+                    onClick={() => void removeFile(file.id, file.path, file.name)}
+                    className="grid size-6 place-items-center rounded text-fg-subtle transition-colors hover:bg-danger/10 hover:text-danger"
+                  >
+                    <X className="size-3" />
+                  </button>
+                </div>
               </div>
             ))
           )}

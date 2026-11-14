@@ -1,10 +1,10 @@
-/**======> Reference By Comment <======
+﻿/**======> Reference By Comment <======
  * ===> 01 - Imports
  * ===> 02 - Project Card
- * ===> 03 - Project Dialog
+ * ===> 03 - Projects Page
  */
 
-import { useEffect, useState, type FormEvent } from 'react'
+import { useState } from 'react'
 import { ArchiveRestore, ArrowUpRight, FolderKanban, FolderPlus, GripVertical, MoreHorizontal, Plus, Trash2 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 
@@ -12,31 +12,30 @@ import {
   Button,
   Card,
   EmptyState,
-  Field,
   IconButton,
-  Input,
-  Modal,
   PageHeader,
   Progress,
 } from '@/components/ui'
 import { ContextMenu } from '@/components/context-menu'
 import { DragOverlay } from '@/components/drag-overlay'
 import { DeleteProjectDialog } from '@/components/delete-project-dialog'
+import { ProjectDialog } from '@/components/project-dialog'
 import { projectMenu, type ProjectActions } from '@/lib/actions'
 import { projectProgress } from '@/lib/derive'
-import { PROJECT_COLORS, PROJECT_COLOR_ORDER, PROJECT_STATUS_META } from '@/lib/meta'
+import { PROJECT_COLORS, PROJECT_STATUS_META } from '@/lib/meta'
 import { useApp } from '@/lib/store'
-import { RichTextEditor, plainText } from '@/lib/rich-text'
+import { plainText } from '@/lib/rich-text'
 import { usePointerSort, type PointerSortHandleProps } from '@/lib/use-pointer-sort'
-import type { Project, ProjectColor, ProjectInput } from '@/lib/types'
+import type { Project } from '@/lib/types'
 import { useUI } from '@/lib/ui'
-import { cn, formatDate, projectKeyFromName } from '@/lib/utils'
+import { cn, formatDate } from '@/lib/utils'
 
 export default function ProjectsPage() {
   const { state, updateProject, reorderProjects } = useApp()
   const { openIssueDialog } = useUI()
   const navigate = useNavigate()
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [editTarget, setEditTarget] = useState<Project | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Project | null>(null)
   const { draggingId, overId, pointer, handleProps } = usePointerSort({
     onReorder: (id, targetId) => reorderProjects(id, targetId),
@@ -65,7 +64,7 @@ export default function ProjectsPage() {
           <EmptyState
             icon={<FolderKanban className="size-4" />}
             title="No projects yet"
-            description="Create one to group related tasks — or keep everything in your personal inbox."
+            description="Create one to group related tasks â€” or keep everything in your personal inbox."
             action={
               <Button size="sm" variant="primary" onClick={() => setDialogOpen(true)}>
                 <FolderPlus className="size-3.5" />
@@ -81,6 +80,7 @@ export default function ProjectsPage() {
               key={project.id}
               project={project}
               onNewTask={() => openIssueDialog({ projectId: project.id })}
+              onEdit={() => setEditTarget(project)}
               onArchive={() => updateProject(project.id, { status: 'done' })}
               onDelete={() => setDeleteTarget(project)}
               dragging={draggingId === project.id}
@@ -156,6 +156,11 @@ export default function ProjectsPage() {
       ) : null}
 
       <ProjectDialog open={dialogOpen} onClose={() => setDialogOpen(false)} />
+      <ProjectDialog
+        open={editTarget !== null}
+        project={editTarget}
+        onClose={() => setEditTarget(null)}
+      />
       <DeleteProjectDialog project={deleteTarget} onClose={() => setDeleteTarget(null)} />
       <DragOverlay
         pointer={pointer}
@@ -168,6 +173,7 @@ export default function ProjectsPage() {
 function ProjectCard({
   project,
   onNewTask,
+  onEdit,
   onArchive,
   onDelete,
   dragging,
@@ -176,6 +182,7 @@ function ProjectCard({
 }: {
   project: Project
   onNewTask: () => void
+  onEdit: () => void
   onArchive: () => void
   onDelete: () => void
   dragging: boolean
@@ -198,6 +205,7 @@ function ProjectCard({
     open: (target) => navigate(`/projects/${target.id}`),
     openIssues: (target) => navigate(`/issues?project=${target.id}`),
     newIssue: () => onNewTask(),
+    edit: () => onEdit(),
     archive: () => onArchive(),
     restore: () => updateProject(project.id, { status: 'active' }),
     remove: () => onDelete(),
@@ -243,8 +251,8 @@ function ProjectCard({
               </Link>
             </h3>
             <p className="mt-0.5 truncate text-[10.5px] text-fg-subtle">
-              {project.key} · {PROJECT_STATUS_META[project.status].label}
-              {project.targetDate ? ` · target ${formatDate(project.targetDate)}` : ''}
+              {project.key} Â· {PROJECT_STATUS_META[project.status].label}
+              {project.targetDate ? ` Â· target ${formatDate(project.targetDate)}` : ''}
             </p>
           </div>
           <span
@@ -319,106 +327,5 @@ function ProjectCard({
         />
       ) : null}
     </>
-  )
-}
-function ProjectDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { addProject } = useApp()
-  const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
-  const [color, setColor] = useState<ProjectColor>('violet')
-  const [targetDate, setTargetDate] = useState('')
-
-  useEffect(() => {
-    if (!open) return
-    setName('')
-    setDescription('')
-    setColor('violet')
-    setTargetDate('')
-  }, [open])
-
-  const previewKey = projectKeyFromName(name || 'New project')
-  const canSubmit = name.trim().length > 0
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (!canSubmit) return
-    const input: ProjectInput = {
-      name: name.trim(),
-      description: description.trim(),
-      color,
-      targetDate: targetDate || null,
-    }
-    addProject(input)
-    onClose()
-  }
-
-  return (
-    <Modal open={open} onClose={onClose} label="New project">
-      <form onSubmit={handleSubmit}>
-        <div className="px-5 pt-5 pb-4">
-          <h2 className="text-[15px] font-semibold tracking-[-0.01em] text-fg">New project</h2>
-          <p className="mt-1 text-[12px] leading-5 text-fg-muted">
-            Give it a name, pick a colour, and keep tasks together around one outcome.
-          </p>
-
-          <div className="mt-4 space-y-3">
-            <Field label="Name">
-              <Input
-                autoFocus
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                placeholder="Website revamp"
-              />
-            </Field>
-
-            <Field label="Description">
-              <RichTextEditor
-                value={description}
-                onChange={setDescription}
-                placeholder="What does done look like?"
-                minHeight={84}
-              />
-            </Field>
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Colour">
-                <div className="flex h-9 items-center gap-2">
-                  {PROJECT_COLOR_ORDER.map((option) => (
-                    <button
-                      key={option}
-                      type="button"
-                      aria-label={PROJECT_COLORS[option].label}
-                      aria-pressed={color === option}
-                      onClick={() => setColor(option)}
-                      className={cn(
-                        'size-5 rounded-full transition-transform hover:scale-110',
-                        color === option ? 'ring-2 ring-fg/40 ring-offset-2 ring-offset-surface' : '',
-                      )}
-                      style={{ backgroundColor: PROJECT_COLORS[option].hex }}
-                    />
-                  ))}
-                </div>
-              </Field>
-              <Field label="Target date">
-                <Input type="date" value={targetDate} onChange={(event) => setTargetDate(event.target.value)} />
-              </Field>
-            </div>
-
-            <p className="text-[10.5px] text-fg-subtle">
-              Issue keys will look like <span className="font-mono text-fg-muted">{previewKey}-1</span>
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-end gap-2 border-t border-line bg-surface-2/50 px-4 py-3">
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button type="submit" variant="primary" size="sm" disabled={!canSubmit}>
-            Create project
-          </Button>
-        </div>
-      </form>
-    </Modal>
   )
 }

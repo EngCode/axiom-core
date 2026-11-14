@@ -115,10 +115,44 @@ pub fn open(app: &AppHandle, path: &str) -> Result<(), String> {
     status.map(|_| ()).map_err(|error| error.to_string())
 }
 
+pub fn reveal(app: &AppHandle, path: &str) -> Result<(), String> {
+    let target = validated_path(app, path)?;
+    //===> Ask The File Manager To Select It <===//
+    #[cfg(target_os = "windows")]
+    let status = Command::new("explorer")
+        .arg(format!("/select,{}", target.display()))
+        .spawn();
+    #[cfg(target_os = "macos")]
+    let status = Command::new("open").arg("-R").arg(&target).spawn();
+    #[cfg(all(unix, not(target_os = "macos")))]
+    let status = Command::new("xdg-open")
+        .arg(target.parent().unwrap_or(&target))
+        .spawn();
+    status.map(|_| ()).map_err(|error| error.to_string())
+}
+
+pub fn open_with(app: &AppHandle, path: &str) -> Result<(), String> {
+    let target = validated_path(app, path)?;
+    //===> Let The OS Pick An Application <===//
+    // Windows exposes the native "Open with" chooser. The other platforms use
+    // their default handler because they do not ship an equivalent dialog.
+    #[cfg(target_os = "windows")]
+    let status = Command::new("rundll32.exe")
+        .args(["shell32.dll,OpenAs_RunDLL"])
+        .arg(&target)
+        .spawn();
+    #[cfg(target_os = "macos")]
+    let status = Command::new("open").arg(&target).spawn();
+    #[cfg(all(unix, not(target_os = "macos")))]
+    let status = Command::new("xdg-open").arg(&target).spawn();
+    status.map(|_| ()).map_err(|error| error.to_string())
+}
+
 pub fn remove(app: &AppHandle, path: &str) -> Result<(), String> {
     let target = validated_path(app, path)?;
     fs::remove_file(target).map_err(|error| error.to_string())
 }
+
 pub fn pick_cover(app: &AppHandle) -> Result<Option<String>, String> {
     //===> Pick An Image <===//
     let Some(source) = rfd::FileDialog::new()

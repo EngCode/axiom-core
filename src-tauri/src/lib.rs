@@ -487,6 +487,16 @@ fn open_issue_attachment(app: tauri::AppHandle, path: String) -> Result<(), Stri
 }
 
 #[tauri::command]
+fn open_issue_attachment_with(app: tauri::AppHandle, path: String) -> Result<(), String> {
+    attachments::open_with(&app, &path)
+}
+
+#[tauri::command]
+fn reveal_issue_attachment(app: tauri::AppHandle, path: String) -> Result<(), String> {
+    attachments::reveal(&app, &path)
+}
+
+#[tauri::command]
 fn delete_issue_attachment(app: tauri::AppHandle, path: String) -> Result<(), String> {
     attachments::remove(&app, &path)
 }
@@ -573,6 +583,8 @@ pub fn run() {
             import_workspace_backup,
             restart_app,
             open_issue_attachment,
+            open_issue_attachment_with,
+            reveal_issue_attachment,
             delete_issue_attachment
         ])
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
