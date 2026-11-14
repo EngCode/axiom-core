@@ -12,7 +12,7 @@ installers are never committed to the repository.
 | Platform | Runner | Bundles | Notes |
 | --- | --- | --- | --- |
 | Windows x64 | `windows-latest` | NSIS `.exe`, MSI `.msi` | NSIS is per-user (no UAC); MSI is per-machine (admin) |
-| Linux x64 | `ubuntu-22.04` | `.deb`, AppImage | built against WebKitGTK 4.1 |
+| Linux x64 | `ubuntu-22.04` | `.deb` | built against WebKitGTK 4.1 |
 | macOS Apple Silicon | `macos-14` | `.dmg`, `.app` | minimum macOS 10.15 |
 | macOS Intel | `macos-15-intel` | `.dmg`, `.app` | native x86_64 runner; available until Aug 2027 |
 
@@ -84,7 +84,9 @@ pnpm tauri signer generate -w .axiom-data/updater/axiom-core.key
 - Windows uses `installMode: "passive"`: the signed NSIS setup runs over the current installation
   and Axiom Core relaunches afterwards. **No uninstall step is required**, and the database,
   WebView profile, posters and library index stay where they are.
-- Linux and macOS use the same plugin and replace the installed app bundle in place.
+- Windows and macOS replace the installed app in place.
+- Linux ships a `.deb` only. Tauri's updater installs AppImage bundles on Linux, so in-app
+  updates are not available there; install each new `.deb` with your package manager.
 
 The UI lives in **Settings → Updates**: it shows the installed version, checks the endpoint,
 prints the release notes and installs with a progress bar.
@@ -96,11 +98,12 @@ $env:TAURI_SIGNING_PRIVATE_KEY = Get-Content .axiom-data/updater/axiom-core.key 
 pnpm build:win:update
 ```
 
-The signed NSIS setup and its `.sig` land under `src-tauri/target/release/bundle/nsis/`. The MSI is
-Authenticode-signed too, but it has no updater artifact: on Windows the plugin updates through NSIS
-only. `latest.json` is produced by the release workflow (`tauri-action`), not by a plain local
-build. Minisign signatures are required by the client; an unsigned artifact is rejected even if it
-downloads.
+The signed NSIS setup and its `.sig` sidecar land under `src-tauri/target/release/bundle/nsis/`.
+The MSI is Authenticode-signed too, but it has no updater artifact: on Windows the plugin updates
+through NSIS only. `latest.json` is produced by the release workflow (`tauri-action`), not by a
+plain local build. The workflow deletes the `.sig` assets from the published release because the
+same minisign signatures are already embedded in `latest.json`. Signatures are still required by
+the client; an unsigned artifact is rejected even if it downloads.
 
 To exercise signing without the WiX step (useful when the MSI cannot build in a restricted
 environment):
@@ -121,8 +124,8 @@ pnpm tauri build --bundles nsis --config src-tauri/tauri.updater.conf.json
    ```
 
 3. The **Release** workflow runs the matrix, builds each bundle with `tauri-action` and creates a
-   **draft** GitHub Release named `Axiom Core v0.2.0` with every artifact, `.sig` file and
-   `latest.json` attached.
+   **draft** GitHub Release named `Axiom Core v0.2.0` with every installer and `latest.json`
+   attached. A final job then deletes the redundant `.sig` sidecars (and any AppImage).
 4. Review the draft, then publish it. Installed copies pick it up on the next update check.
 
 Running the workflow manually (`workflow_dispatch`) builds and uploads the bundles as workflow
@@ -136,7 +139,7 @@ Artifacts also land locally under `src-tauri/target/release/bundle/` after a loc
 ```bash
 pnpm install
 pnpm build:win      # NSIS + MSI on Windows
-pnpm build:linux    # deb + AppImage on Linux
+pnpm build:linux    # .deb on Linux
 pnpm build:mac      # dmg + app on macOS
 
 # Same, plus updater signatures and latest.json (needs TAURI_SIGNING_PRIVATE_KEY):
@@ -167,9 +170,9 @@ pnpm build:win
 | macOS 10.15+ | none beyond the OS |
 | Linux | WebKitGTK 4.1, GTK 3; the `.deb` declares them |
 
-Only the MSI needs administrator rights. NSIS, the AppImage, the `.dmg` and the auto-updater
-install per user, so no `sudo`/UAC prompt appears. On Linux, installing the `.deb` needs root
-(`sudo apt install ./axiom-core_*.deb`), while the AppImage does not.
+Only the MSI needs administrator rights. NSIS, the `.dmg` and the auto-updater install per user,
+so no `sudo`/UAC prompt appears. On Linux, installing the `.deb` needs root
+(`sudo apt install ./axiom-core_*.deb`).
 
 ## First run
 
@@ -195,8 +198,7 @@ The WebView profile sits alongside it. Library rebuild backups go to `backups/` 
 
 - **Windows** — run the NSIS setup for a per-user install, or the MSI for a machine-wide one.
   WebView2 is the only runtime dependency and ships with Windows 11.
-- **Linux** — install the `.deb` with your package manager, or mark the AppImage executable and run
-  it. WebKitGTK 4.1 and GTK 3 are required.
+- **Linux** — install the `.deb` with your package manager. WebKitGTK 4.1 and GTK 3 are required.
 - **macOS** — open the `.dmg` and drag Axiom Core to Applications.
 
 Signed builds show the publisher name in the SmartScreen prompt. Unsigned local builds still show
